@@ -1,9 +1,6 @@
 ﻿Shader "Custom SRP/Portal Passes"
 {
-    Properties
-    {
-        _StencilRef ("Stencil Ref", Range(0, 255)) = 0
-    }
+    Properties {}
     SubShader
     {
         // punch hole pass

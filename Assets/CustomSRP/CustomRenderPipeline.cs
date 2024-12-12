@@ -112,12 +112,12 @@ public class CustomRenderPipeline : RenderPipeline
 		ctx.cmd.BeginSample(sampleName);
 
 		// read and incr
-		_asset.PortalPassesMaterial.SetInt("_StencilRef", currentDepth);
+		ctx.cmd.SetGlobalInt("_StencilRef", currentDepth);
 		ctx.cmd.DrawRenderer(portal.Renderer, _asset.PortalPassesMaterial, 0, 0);
 		currentDepth++;
 
 		// ovewrite depth
-		_asset.PortalPassesMaterial.SetInt("_StencilRef", currentDepth);
+		ctx.cmd.SetGlobalInt("_StencilRef", currentDepth);
 		ctx.cmd.DrawRenderer(portal.Renderer, _asset.PortalPassesMaterial, 0, 1);
 
 		ctx.cmd.EndSample(sampleName);
@@ -133,7 +133,7 @@ public class CustomRenderPipeline : RenderPipeline
 		ctx.cmd.BeginSample(sampleName);
 
 		// read and decr
-		_asset.PortalPassesMaterial.SetInt("_StencilRef", currentDepth);
+		ctx.cmd.SetGlobalInt("_StencilRef", currentDepth);
 		ctx.cmd.DrawRenderer(portal.Renderer, _asset.PortalPassesMaterial, 0, 2);
 		currentDepth--;
 
@@ -145,6 +145,8 @@ public class CustomRenderPipeline : RenderPipeline
 	/// </summary>
 	private void SetupCamera(RenderContext ctx, Portal fromPortal, Portal toPortal)
 	{
+		return;
+
 		var sampleName = $"setup camera from {fromPortal} to {toPortal}";
 		ctx.cmd.BeginSample(sampleName);
 
