@@ -8,6 +8,8 @@ public class Portal : MonoBehaviour
 
 	public List<Portal> InnerPortals { get; private set; }
 
+	public Renderer Renderer;
+
 	private void Awake()
 	{
 		if (AllPortals == null) AllPortals = FindObjectsByType<Portal>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);

@@ -35,13 +35,15 @@ public class CustomRenderPipeline : RenderPipeline
 		var sampleName = $"render camera {camera.name}";
 		cmd.BeginSample(sampleName);
 
+		// cmd.ClearRenderTarget(true, true, Color.clear);
+
 		var ctx = new RenderContext
 		{
 			cmd = cmd,
 			ctx = context,
 			cam = camera,
 		};
-		RenderPortal(null, ctx);
+		RenderPortal(ctx, null);
 
 		// just shove this at the end for now
 		cmd.DrawRendererList(context.CreateSkyboxRendererList(camera));
@@ -56,14 +58,15 @@ public class CustomRenderPipeline : RenderPipeline
 		CommandBufferPool.Release(cmd);
 	}
 
-	private static void RenderPortal(Portal portal, RenderContext ctx, int currentDepth = 0)
+	private static void RenderPortal(RenderContext ctx, Portal portal, int currentDepth = 0)
 	{
-		// max recursion
-		if (currentDepth == 3) return;
+		if (currentDepth != 0)
+		{
+			PunchHole(ctx, portal, currentDepth);
+			currentDepth++;
 
-		PunchHole(ctx, currentDepth);
-
-		SetupCamera(ctx, portal);
+			SetupCamera(ctx, portal);
+		}
 
 		ctx.cam.TryGetCullingParameters(out var cullingParameters);
 		var cullingResults = ctx.ctx.Cull(ref cullingParameters);
@@ -71,30 +74,42 @@ public class CustomRenderPipeline : RenderPipeline
 
 		DrawGeometry(ctx, cullingResults, true, currentDepth);
 
-		/*
-		// DFS traverse of portals
-		foreach (var innerPortal in portal.InnerPortals)
+		if (currentDepth <= 3 && false)
 		{
-			RenderPortal(innerPortal, ctx, currentDepth + 1);
+			// DFS traverse of portals
+			foreach (var innerPortal in portal.InnerPortals)
+			{
+				RenderPortal(ctx, innerPortal, currentDepth);
+			}
 		}
-		*/
-
-		UnpunchHole(ctx, currentDepth);
-
-		SetupCamera(ctx, portal);
 
 		DrawGeometry(ctx, cullingResults, false, currentDepth);
+
+		if (currentDepth != 0)
+		{
+			UnpunchHole(ctx, currentDepth);
+			currentDepth--;
+
+			SetupCamera(ctx, portal);
+		}
 	}
 
 	/// <summary>
+	/// stencil read currentDepth, write currentDepth + 1
 	/// writes depth = far
-	/// increments stencil buffer
 	/// </summary>
-	private static void PunchHole(RenderContext ctx, int currentDepth) { }
+	private static void PunchHole(RenderContext ctx, Portal portal, int currentDepth)
+	{
+		// render portal with stencil ref = currentDepth and incr
+		// ctx.cmd.DrawRenderer(portal.Renderer, portal.Renderer.sharedMaterial);
+
+		// stencil ref = currentDepth + 1, ovewrite depth
+		// right now we just have this happen with a queue
+	}
 
 	/// <summary>
-	/// writes depth = wall depth
-	/// decrements stencil buffer
+	/// stencil read currentDepth, write currentDepth - 1
+	/// writes depth = portal quad depth
 	/// </summary>
 	private static void UnpunchHole(RenderContext ctx, int currentDepth) { }
 
@@ -103,7 +118,7 @@ public class CustomRenderPipeline : RenderPipeline
 	/// </summary>
 	private static void SetupCamera(RenderContext ctx, Portal portal)
 	{
-		ctx.ctx.SetupCameraProperties(ctx.cam);
+		// ctx.ctx.SetupCameraProperties(ctx.cam);
 	}
 
 	private static void DrawGeometry(RenderContext ctx, CullingResults cullingResults, bool opaque, int currentDepth)

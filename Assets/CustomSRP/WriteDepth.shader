@@ -5,6 +5,8 @@
     {
         Pass
         {
+            ZTest Always
+
             HLSLPROGRAM
             #pragma vertex UnlitPassVertex
             #pragma fragment UnlitPassFragment
@@ -37,9 +39,8 @@
                 return TransformObjectToHClip(positionOS);
             }
 
-            float4 UnlitPassFragment(out float depth : SV_Depth) : SV_Target
+            float4 UnlitPassFragment() : SV_Target
             {
-                depth = 1;
                 return 0;
             }
             ENDHLSL
