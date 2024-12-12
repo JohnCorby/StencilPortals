@@ -12,3 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1a614decdc454f7a829232d6263857d3, type: 3}
   m_Name: CustomRenderPipelineAsset
   m_EditorClassIdentifier: 
+  PortalPassesMaterial: {fileID: 2100000, guid: f9ee3b84a06335c45afa9832e7930a5c, type: 2}

@@ -4,6 +4,8 @@ using UnityEngine.Rendering;
 [CreateAssetMenu(menuName = "Rendering/CustomRenderPipelineAsset", fileName = "CustomRenderPipelineAsset")]
 public class CustomRenderPipelineAsset : RenderPipelineAsset<CustomRenderPipeline>
 {
+	public Material PortalPassesMaterial;
+
 	protected override RenderPipeline CreatePipeline()
 	{
 		return new CustomRenderPipeline(this);

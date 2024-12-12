@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RendererUtils;
 
@@ -29,10 +30,10 @@ public class CustomRenderPipeline : RenderPipeline
 		public Camera cam;
 	}
 
-	private static void RenderCamera(ScriptableRenderContext context, Camera camera)
+	private void RenderCamera(ScriptableRenderContext context, Camera camera)
 	{
 		var cmd = CommandBufferPool.Get();
-		var sampleName = $"render camera {camera.name}";
+		var sampleName = $"render camera {camera}";
 		cmd.BeginSample(sampleName);
 
 		// cmd.ClearRenderTarget(true, true, Color.clear);
@@ -58,74 +59,103 @@ public class CustomRenderPipeline : RenderPipeline
 		CommandBufferPool.Release(cmd);
 	}
 
-	private static void RenderPortal(RenderContext ctx, Portal portal, int currentDepth = 0)
+	/// <summary>
+	/// render a portal. null = render initial camera
+	/// </summary>
+	private void RenderPortal(RenderContext ctx, Portal portal, int currentDepth = 0)
 	{
-		if (currentDepth != 0)
-		{
-			PunchHole(ctx, portal, currentDepth);
-			currentDepth++;
+		var sampleName = $"render portal {portal}";
+		ctx.cmd.BeginSample(sampleName);
 
-			SetupCamera(ctx, portal);
-		}
-
-		ctx.cam.TryGetCullingParameters(out var cullingParameters);
+		var valid = ctx.cam.TryGetCullingParameters(out var cullingParameters);
+		if (!valid) return;
 		var cullingResults = ctx.ctx.Cull(ref cullingParameters);
 
 		ctx.ctx.SetupCameraProperties(ctx.cam);
-		ctx.cmd.EnableScissorRect(new Rect(0,0,300,300));
 
 		DrawGeometry(ctx, cullingResults, true, currentDepth);
 
-		ctx.cmd.DisableScissorRect();
-
-		if (currentDepth <= 3 && false)
+		if (currentDepth < 4)
 		{
 			// DFS traverse of portals
-			foreach (var innerPortal in portal.InnerPortals)
+			foreach (var innerPortal in GetInnerPortals(ctx, portal))
 			{
+				// could put this at the top and bottom of RenderPortal
+				PunchHole(ctx, innerPortal, ref currentDepth);
+
+				SetupCamera(ctx, innerPortal);
+
 				RenderPortal(ctx, innerPortal, currentDepth);
+
+				SetupCamera(ctx, portal);
+
+				UnpunchHole(ctx, innerPortal, ref currentDepth);
 			}
 		}
 
 		DrawGeometry(ctx, cullingResults, false, currentDepth);
 
-		if (currentDepth != 0)
-		{
-			UnpunchHole(ctx, currentDepth);
-			currentDepth--;
+		ctx.cmd.EndSample(sampleName);
+	}
 
-			SetupCamera(ctx, portal);
-		}
+	private IEnumerable<Portal> GetInnerPortals(RenderContext ctx, Portal portal)
+	{
+		return portal ? portal.InnerPortals : Portal.AllPortals;
 	}
 
 	/// <summary>
 	/// stencil read currentDepth, write currentDepth + 1
 	/// writes depth = far
 	/// </summary>
-	private static void PunchHole(RenderContext ctx, Portal portal, int currentDepth)
+	private void PunchHole(RenderContext ctx, Portal portal, ref int currentDepth)
 	{
-		// render portal with stencil ref = currentDepth and incr
-		// ctx.cmd.DrawRenderer(portal.Renderer, portal.Renderer.sharedMaterial);
+		var sampleName = $"punch hole for {portal}";
+		ctx.cmd.BeginSample(sampleName);
 
-		// stencil ref = currentDepth + 1, ovewrite depth
-		// right now we just have this happen with a queue
+		// read and incr
+		_asset.PortalPassesMaterial.SetInt("_StencilRef", currentDepth);
+		ctx.cmd.DrawRenderer(portal.Renderer, _asset.PortalPassesMaterial, 0, 0);
+		currentDepth++;
+
+		// ovewrite depth
+		_asset.PortalPassesMaterial.SetInt("_StencilRef", currentDepth);
+		ctx.cmd.DrawRenderer(portal.Renderer, _asset.PortalPassesMaterial, 0, 1);
+
+		ctx.cmd.EndSample(sampleName);
 	}
 
 	/// <summary>
 	/// stencil read currentDepth, write currentDepth - 1
 	/// writes depth = portal quad depth
 	/// </summary>
-	private static void UnpunchHole(RenderContext ctx, int currentDepth) { }
+	private void UnpunchHole(RenderContext ctx, Portal portal, ref int currentDepth)
+	{
+		var sampleName = $"unpunch hole for {portal}";
+		ctx.cmd.BeginSample(sampleName);
+
+		// read and decr
+		_asset.PortalPassesMaterial.SetInt("_StencilRef", currentDepth);
+		ctx.cmd.DrawRenderer(portal.Renderer, _asset.PortalPassesMaterial, 0, 2);
+		currentDepth--;
+
+		ctx.cmd.EndSample(sampleName);
+	}
 
 	/// <summary>
 	/// setup camera matrices and viewport
 	/// </summary>
-	private static void SetupCamera(RenderContext ctx, Portal portal)
+	private void SetupCamera(RenderContext ctx, Portal portal)
 	{
+		var sampleName = $"setup camera for {portal}";
+		ctx.cmd.BeginSample(sampleName);
+
+		ctx.cmd.EndSample(sampleName);
+
+
 		// ctx.ctx.SetupCameraProperties(ctx.cam);
 	}
 
-	private static void DrawGeometry(RenderContext ctx, CullingResults cullingResults, bool opaque, int currentDepth)
+	private void DrawGeometry(RenderContext ctx, CullingResults cullingResults, bool opaque, int currentDepth)
 	{
 		var sampleName = $"draw geometry {(opaque ? "opaque" : "transparent")}";
 		ctx.cmd.BeginSample(sampleName);
