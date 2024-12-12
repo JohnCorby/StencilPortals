@@ -32,6 +32,8 @@ public class CustomRenderPipeline : RenderPipeline
 	private static void RenderCamera(ScriptableRenderContext context, Camera camera)
 	{
 		var cmd = CommandBufferPool.Get();
+		var sampleName = $"render camera {camera.name}";
+		cmd.BeginSample(sampleName);
 
 		var ctx = new RenderContext
 		{
@@ -46,6 +48,8 @@ public class CustomRenderPipeline : RenderPipeline
 		cmd.DrawRendererList(context.CreateGizmoRendererList(camera, GizmoSubset.PreImageEffects));
 		cmd.DrawRendererList(context.CreateGizmoRendererList(camera, GizmoSubset.PostImageEffects));
 
+		cmd.EndSample(sampleName);
+
 		context.ExecuteCommandBuffer(cmd);
 		context.Submit();
 
@@ -54,6 +58,9 @@ public class CustomRenderPipeline : RenderPipeline
 
 	private static void RenderPortal(Portal portal, RenderContext ctx, int currentDepth = 0)
 	{
+		// max recursion
+		if (currentDepth == 3) return;
+
 		PunchHole(ctx, currentDepth);
 
 		SetupCamera(ctx, portal);
@@ -104,10 +111,15 @@ public class CustomRenderPipeline : RenderPipeline
 		var sampleName = $"draw geometry {(opaque ? "opaque" : "transparent")}";
 		ctx.cmd.BeginSample(sampleName);
 
-		var rendererListDesc = new RendererListDesc(new ShaderTagId("UniversalForward"), cullingResults, ctx.cam)
+		var rendererListDesc = new RendererListDesc(new ShaderTagId("SRPDefaultUnlit"), cullingResults, ctx.cam)
 		{
 			sortingCriteria = opaque ? SortingCriteria.CommonOpaque : SortingCriteria.CommonTransparent,
-			renderQueueRange = opaque ? RenderQueueRange.opaque : RenderQueueRange.transparent
+			renderQueueRange = opaque ? RenderQueueRange.opaque : RenderQueueRange.transparent,
+			stateBlock = new RenderStateBlock(RenderStateMask.Stencil)
+			{
+				stencilState = new StencilState(compareFunction: CompareFunction.Equal),
+				stencilReference = currentDepth
+			}
 		};
 		var rendererList = ctx.ctx.CreateRendererList(rendererListDesc);
 		ctx.cmd.DrawRendererList(rendererList);
