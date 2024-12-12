@@ -80,14 +80,13 @@ public class CustomRenderPipeline : RenderPipeline
 			// DFS traverse of portals
 			foreach (var innerPortal in GetInnerPortals(ctx, portal))
 			{
-				// could put this at the top and bottom of RenderPortal
 				PunchHole(ctx, innerPortal, ref currentDepth);
 
-				SetupCamera(ctx, innerPortal);
+				SetupCamera(ctx, portal, innerPortal);
 
 				RenderPortal(ctx, innerPortal, currentDepth);
 
-				SetupCamera(ctx, portal);
+				SetupCamera(ctx, innerPortal, portal);
 
 				UnpunchHole(ctx, innerPortal, ref currentDepth);
 			}
@@ -144,15 +143,23 @@ public class CustomRenderPipeline : RenderPipeline
 	/// <summary>
 	/// setup camera matrices and viewport
 	/// </summary>
-	private void SetupCamera(RenderContext ctx, Portal portal)
+	private void SetupCamera(RenderContext ctx, Portal fromPortal, Portal toPortal)
 	{
-		var sampleName = $"setup camera for {portal}";
+		var sampleName = $"setup camera from {fromPortal} to {toPortal}";
 		ctx.cmd.BeginSample(sampleName);
 
+		var p2pMatrix = toPortal.transform.localToWorldMatrix * fromPortal.transform.worldToLocalMatrix;
+
+		var newCamMatrix = p2pMatrix * ctx.cam.transform.localToWorldMatrix;
+		ctx.cam.transform.SetPositionAndRotation(
+			newCamMatrix.GetPosition(),
+			newCamMatrix.rotation
+		);
+
+		// TODO: set near plane
+		// TODO: confine frustum to portal using viewport etc
+
 		ctx.cmd.EndSample(sampleName);
-
-
-		// ctx.ctx.SetupCameraProperties(ctx.cam);
 	}
 
 	private void DrawGeometry(RenderContext ctx, CullingResults cullingResults, bool opaque, int currentDepth)
