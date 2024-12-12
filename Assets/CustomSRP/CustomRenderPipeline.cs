@@ -70,9 +70,13 @@ public class CustomRenderPipeline : RenderPipeline
 
 		ctx.cam.TryGetCullingParameters(out var cullingParameters);
 		var cullingResults = ctx.ctx.Cull(ref cullingParameters);
+
 		ctx.ctx.SetupCameraProperties(ctx.cam);
+		ctx.cmd.EnableScissorRect(new Rect(0,0,300,300));
 
 		DrawGeometry(ctx, cullingResults, true, currentDepth);
+
+		ctx.cmd.DisableScissorRect();
 
 		if (currentDepth <= 3 && false)
 		{
