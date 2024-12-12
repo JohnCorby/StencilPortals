@@ -6,6 +6,7 @@
         // punch hole pass
         Pass
         {
+            ZWrite Off
             Stencil
             {
                 Ref [_StencilRef]
@@ -45,9 +46,8 @@
                 return TransformObjectToHClip(positionOS);
             }
 
-            float4 UnlitPassFragment() : SV_Target
+            void UnlitPassFragment()
             {
-                return 0;
             }
             ENDHLSL
         }
@@ -96,7 +96,7 @@
 
             float UnlitPassFragment() : SV_Depth
             {
-                return 0.003;
+                return 0;
             }
             ENDHLSL
         }
@@ -143,9 +143,8 @@
                 return TransformObjectToHClip(positionOS);
             }
 
-            float4 UnlitPassFragment() : SV_Target
+            void UnlitPassFragment()
             {
-                return 0;
             }
             ENDHLSL
         }

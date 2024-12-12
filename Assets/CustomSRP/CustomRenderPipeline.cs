@@ -133,6 +133,7 @@ public class CustomRenderPipeline : RenderPipeline
 		ctx.cmd.BeginSample(sampleName);
 
 		// read and decr
+		// write quad depth
 		ctx.cmd.SetGlobalInt("_StencilRef", currentDepth);
 		ctx.cmd.DrawRenderer(portal.Renderer, _asset.PortalPassesMaterial, 0, 2);
 		currentDepth--;
@@ -145,11 +146,12 @@ public class CustomRenderPipeline : RenderPipeline
 	/// </summary>
 	private void SetupCamera(RenderContext ctx, Portal fromPortal, Portal toPortal)
 	{
-		return;
+		// if (!fromPortal || !toPortal) return;
 
 		var sampleName = $"setup camera from {fromPortal} to {toPortal}";
 		ctx.cmd.BeginSample(sampleName);
 
+		/*
 		var p2pMatrix = toPortal.transform.localToWorldMatrix * fromPortal.transform.worldToLocalMatrix;
 
 		var newCamMatrix = p2pMatrix * ctx.cam.transform.localToWorldMatrix;
@@ -157,6 +159,8 @@ public class CustomRenderPipeline : RenderPipeline
 			newCamMatrix.GetPosition(),
 			newCamMatrix.rotation
 		);
+		*/
+		ctx.cam.transform.position += Vector3.up * .1f;
 
 		// TODO: set near plane
 		// TODO: confine frustum to portal using viewport etc
