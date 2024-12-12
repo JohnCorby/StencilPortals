@@ -1,50 +1,48 @@
 ﻿Shader "Custom SRP/Write Depth"
 {
-	Properties
-	{
-	}
-	SubShader
-	{
-		Pass
-		{
-			CGPROGRAM
-			#pragma vertex vert
-			#pragma fragment frag
+    Properties {}
+    SubShader
+    {
+        Pass
+        {
+            HLSLPROGRAM
+            #pragma vertex UnlitPassVertex
+            #pragma fragment UnlitPassFragment
 
-			struct appdata
-			{
-				float4 vertex : POSITION;
-				float2 uv : TEXCOORD0;
-			};
+            #define UNITY_MATRIX_M unity_ObjectToWorld
+            #define UNITY_MATRIX_I_M unity_WorldToObject
+            #define UNITY_MATRIX_V unity_MatrixV
+            #define UNITY_MATRIX_I_V unity_MatrixInvV
+            #define UNITY_MATRIX_VP unity_MatrixVP
+            #define UNITY_PREV_MATRIX_M unity_prev_MatrixM
+            #define UNITY_PREV_MATRIX_I_M unity_prev_MatrixIM
+            #define UNITY_MATRIX_P glstate_matrix_projection
 
-			struct v2f
-			{
-				float2 uv : TEXCOORD0;
-				UNITY_FOG_COORDS(1)
-				float4 vertex : SV_POSITION;
-			};
+            float4x4 unity_ObjectToWorld;
+            float4x4 unity_WorldToObject;
 
-			sampler2D _MainTex;
-			float4 _MainTex_ST;
+            float4x4 unity_MatrixVP;
+            float4x4 unity_MatrixV;
+            float4x4 unity_MatrixInvV;
+            float4x4 unity_prev_MatrixM;
+            float4x4 unity_prev_MatrixIM;
+            float4x4 glstate_matrix_projection;
+            float4 unity_WorldTransformParams;
 
-			v2f vert (appdata v)
-			{
-				v2f o;
-				o.vertex = UnityObjectToClipPos(v.vertex);
-				o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-				UNITY_TRANSFER_FOG(o,o.vertex);
-				return o;
-			}
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
 
-			fixed4 frag (v2f i) : SV_Target
-			{
-				// sample the texture
-				fixed4 col = tex2D(_MainTex, i.uv);
-				// apply fog
-				UNITY_APPLY_FOG(i.fogCoord, col);
-				return col;
-			}
-			ENDCG
-		}
-	}
+            float4 UnlitPassVertex(float4 positionOS : POSITION) : SV_POSITION
+            {
+                return TransformObjectToHClip(positionOS);
+            }
+
+            float4 UnlitPassFragment(out float depth : SV_Depth) : SV_Target
+            {
+                depth = 1;
+                return 0;
+            }
+            ENDHLSL
+        }
+    }
 }
