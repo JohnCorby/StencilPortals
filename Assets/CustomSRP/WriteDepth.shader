@@ -39,8 +39,9 @@
                 return TransformObjectToHClip(positionOS);
             }
 
-            float4 UnlitPassFragment() : SV_Target
+            float4 UnlitPassFragment(out float depth : SV_Depth) : SV_Target
             {
+                depth = 0.003;
                 return 0;
             }
             ENDHLSL
