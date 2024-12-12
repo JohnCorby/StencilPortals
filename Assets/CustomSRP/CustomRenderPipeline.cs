@@ -1,6 +1,8 @@
 ﻿using System;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.RendererUtils;
+using UnityEngine.Rendering.Universal;
 
 public class CustomRenderPipeline : RenderPipeline
 {
@@ -13,6 +15,22 @@ public class CustomRenderPipeline : RenderPipeline
 
 	protected override void Render(ScriptableRenderContext context, Camera[] cameras)
 	{
-		throw new NotImplementedException();
+		foreach (var camera in cameras)
+		{
+			RenderCamera(context, camera);
+		}
+	}
+
+	private void RenderCamera(ScriptableRenderContext context, Camera camera)
+	{
+		camera.TryGetCullingParameters(out var cullingParameters);
+		var cullingResults = context.Cull(ref cullingParameters);
+
+		var cmd = CommandBufferPool.Get();
+
+		cmd.DrawRendererList(context.CreateRendererList(new RendererListDesc(new ShaderTagId("UniversalForward"), cullingResults, camera)));
+		cmd.DrawRendererList(context.CreateSkyboxRendererList(camera));
+
+		CommandBufferPool.Release(cmd);
 	}
 }
