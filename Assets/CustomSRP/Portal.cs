@@ -32,4 +32,15 @@ public class Portal : MonoBehaviour
 			portal.Awake();
 		}
 	}
+
+	public static void TempHackInit()
+	{
+		if (AllPortals == null)
+		{
+			foreach (var portal in FindObjectsByType<Portal>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+			{
+				portal.Awake();
+			}
+		}
+	}
 }

@@ -17,6 +17,8 @@ public class CustomRenderPipeline : RenderPipeline
 
 	protected override void Render(ScriptableRenderContext context, Camera[] cameras)
 	{
+		Portal.TempHackInit();
+
 		foreach (var camera in cameras)
 		{
 			RenderCamera(context, camera);
@@ -45,6 +47,8 @@ public class CustomRenderPipeline : RenderPipeline
 			cam = camera,
 		};
 		RenderPortal(ctx, null);
+
+		cmd.SetViewMatrix(ctx.cam.worldToCameraMatrix);
 
 		// just shove this at the end for now
 		cmd.DrawRendererList(context.CreateSkyboxRendererList(camera));
@@ -75,18 +79,18 @@ public class CustomRenderPipeline : RenderPipeline
 
 		DrawGeometry(ctx, cullingResults, true, currentDepth);
 
-		if (currentDepth < 4)
+		if (currentDepth < _asset.MaxDepth)
 		{
 			// DFS traverse of portals
 			foreach (var innerPortal in GetInnerPortals(ctx, portal))
 			{
 				PunchHole(ctx, innerPortal, ref currentDepth);
 
-				SetupCamera(ctx, portal, innerPortal);
+				SetupCamera(ctx, portal, innerPortal, true);
 
 				RenderPortal(ctx, innerPortal, currentDepth);
 
-				SetupCamera(ctx, innerPortal, portal);
+				SetupCamera(ctx, innerPortal, portal, false);
 
 				UnpunchHole(ctx, innerPortal, ref currentDepth);
 			}
@@ -144,7 +148,7 @@ public class CustomRenderPipeline : RenderPipeline
 	/// <summary>
 	/// setup camera matrices and viewport
 	/// </summary>
-	private void SetupCamera(RenderContext ctx, Portal fromPortal, Portal toPortal)
+	private void SetupCamera(RenderContext ctx, Portal fromPortal, Portal toPortal, bool temp)
 	{
 		// if (!fromPortal || !toPortal) return;
 
@@ -160,7 +164,17 @@ public class CustomRenderPipeline : RenderPipeline
 			newCamMatrix.rotation
 		);
 		*/
-		ctx.cam.transform.position += Vector3.up * .1f;
+
+		if (temp)
+		{
+			ctx.cam.transform.position += Vector3.up;
+			ctx.cmd.SetViewMatrix(ctx.cam.worldToCameraMatrix);
+		}
+		else
+		{
+			ctx.cam.transform.position -= Vector3.up;
+			ctx.cmd.SetViewMatrix(ctx.cam.worldToCameraMatrix);
+		}
 
 		// TODO: set near plane
 		// TODO: confine frustum to portal using viewport etc
