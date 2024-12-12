@@ -41,6 +41,11 @@ public class CustomRenderPipeline : RenderPipeline
 		};
 		RenderPortal(null, ctx);
 
+		// just shove this at the end for now
+		cmd.DrawRendererList(context.CreateSkyboxRendererList(camera));
+		cmd.DrawRendererList(context.CreateGizmoRendererList(camera, GizmoSubset.PreImageEffects));
+		cmd.DrawRendererList(context.CreateGizmoRendererList(camera, GizmoSubset.PostImageEffects));
+
 		context.ExecuteCommandBuffer(cmd);
 		context.Submit();
 
@@ -59,11 +64,13 @@ public class CustomRenderPipeline : RenderPipeline
 
 		DrawGeometry(ctx, cullingResults, true, currentDepth);
 
+		/*
 		// DFS traverse of portals
 		foreach (var innerPortal in portal.InnerPortals)
 		{
 			RenderPortal(innerPortal, ctx, currentDepth + 1);
 		}
+		*/
 
 		UnpunchHole(ctx, currentDepth);
 

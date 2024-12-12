@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-[ExecuteAlways]
 public class Portal : MonoBehaviour
 {
 	public static Portal[] AllPortals { get; private set; }
