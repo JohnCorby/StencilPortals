@@ -22,8 +22,6 @@ public class CustomRenderPipeline : RenderPipeline
 		foreach (var camera in cameras)
 		{
 			RenderCamera(context, camera);
-			// orientation gizmo breaks unless we do this
-			camera.ResetProjectionMatrix();
 		}
 	}
 
@@ -36,11 +34,14 @@ public class CustomRenderPipeline : RenderPipeline
 
 	private void RenderCamera(ScriptableRenderContext context, Camera camera)
 	{
+		// apparently we only need to do this once and not per portal
+		context.SetupCameraProperties(camera);
+
 		var cmd = CommandBufferPool.Get();
 		var sampleName = $"render camera {camera}";
 		cmd.BeginSample(sampleName);
 
-		// cmd.ClearRenderTarget(true, true, Color.clear);
+		cmd.ClearRenderTarget(true, true, Color.clear);
 
 		var ctx = new RenderContext
 		{
@@ -61,6 +62,9 @@ public class CustomRenderPipeline : RenderPipeline
 		context.Submit();
 
 		CommandBufferPool.Release(cmd);
+
+		// orientation gizmo breaks unless we do this
+		camera.ResetProjectionMatrix();
 	}
 
 	/// <summary>
@@ -82,14 +86,8 @@ public class CustomRenderPipeline : RenderPipeline
 			SetupCamera(ctx, portal);
 		}
 
-		CullingResults cullingResults;
-		{
-			var valid = ctx.cam.TryGetCullingParameters(out var cullingParameters);
-			if (!valid) return;
-			cullingResults = ctx.ctx.Cull(ref cullingParameters);
-
-			ctx.ctx.SetupCameraProperties(ctx.cam);
-		}
+		ctx.cam.TryGetCullingParameters(out var cullingParameters);
+		var cullingResults = ctx.ctx.Cull(ref cullingParameters);
 
 		DrawGeometry(ctx, cullingResults, true, currentDepth);
 
@@ -98,6 +96,7 @@ public class CustomRenderPipeline : RenderPipeline
 			// DFS traverse of portals
 			foreach (var innerPortal in GetInnerPortals(ctx, portal))
 			{
+				// BUG: sometimes we get null portals here, which causes stack overflow
 				RenderPortal(ctx, innerPortal, currentDepth);
 			}
 		}
