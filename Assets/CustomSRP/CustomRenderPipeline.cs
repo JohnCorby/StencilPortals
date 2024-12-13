@@ -92,11 +92,12 @@ public class CustomRenderPipeline : RenderPipeline
 
 				var localToWorld = ctx.cam.transform.localToWorldMatrix;
 				var proj = ctx.cam.projectionMatrix;
+				var viewport = currentDepth == 1 ? new Rect(0, 0, Screen.width, Screen.height) : _asset.TestViewport;
 				SetupCamera(ctx, innerPortal);
 
 				RenderPortal(ctx, innerPortal, currentDepth);
 
-				UnsetupCamera(ctx, localToWorld, proj);
+				UnsetupCamera(ctx, localToWorld, proj, viewport);
 
 				UnpunchHole(ctx, innerPortal, ref currentDepth);
 
@@ -210,6 +211,19 @@ public class CustomRenderPipeline : RenderPipeline
 		}
 
 		// TODO: confine frustum to portal using viewport etc
+		{
+			var r = _asset.TestViewport;
+			ctx.cmd.SetViewport(r);
+
+			ctx.cam.ResetProjectionMatrix();
+			Matrix4x4 m = ctx.cam.projectionMatrix;
+			Matrix4x4 m2 = Matrix4x4.TRS(new Vector3((1 / r.width - 1), (1 / r.height - 1), 0), Quaternion.identity, new Vector3(1 / r.width, 1 / r.height, 1));
+			Matrix4x4 m3 = Matrix4x4.TRS(new Vector3(-r.x * 2 / r.width, -r.y * 2 / r.height, 0), Quaternion.identity, Vector3.one);
+			ctx.cam.projectionMatrix = m3 * m2 * m;
+			// var m2 = Matrix4x4.Frustum(r.left, r.right, r.top, r.bottom, ctx.cam.near, ctx.cam.far);
+			// ctx.cam.projectionMatrix = m2 * m;
+			ctx.cmd.SetProjectionMatrix(ctx.cam.projectionMatrix);
+		}
 
 		ctx.cmd.EndSample(sampleName);
 	}
@@ -217,7 +231,7 @@ public class CustomRenderPipeline : RenderPipeline
 	/// <summary>
 	/// undo matrices and viewport
 	/// </summary>
-	private void UnsetupCamera(RenderContext ctx, Matrix4x4 localToWorld, Matrix4x4 proj)
+	private void UnsetupCamera(RenderContext ctx, Matrix4x4 localToWorld, Matrix4x4 proj, Rect viewport)
 	{
 		var sampleName = $"unsetup camera";
 		ctx.cmd.BeginSample(sampleName);
@@ -229,6 +243,7 @@ public class CustomRenderPipeline : RenderPipeline
 		ctx.cmd.SetViewMatrix(ctx.cam.worldToCameraMatrix);
 		ctx.cam.projectionMatrix = proj;
 		ctx.cmd.SetProjectionMatrix(ctx.cam.projectionMatrix);
+		ctx.cmd.SetViewport(viewport);
 
 		ctx.cmd.EndSample(sampleName);
 	}
