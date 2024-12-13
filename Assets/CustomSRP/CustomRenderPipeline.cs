@@ -72,20 +72,6 @@ public class CustomRenderPipeline : RenderPipeline
 	/// </summary>
 	private void RenderPortal(RenderContext ctx, Portal portal, int currentDepth = 0)
 	{
-		var sampleName = $"render portal {portal} depth {currentDepth}";
-		ctx.cmd.BeginSample(sampleName);
-
-		Matrix4x4 localToWorld = default;
-		Matrix4x4 proj = default;
-		if (portal)
-		{
-			PunchHole(ctx, portal, ref currentDepth);
-
-			localToWorld = ctx.cam.transform.localToWorldMatrix;
-			proj = ctx.cam.projectionMatrix;
-			SetupCamera(ctx, portal);
-		}
-
 		ctx.cam.TryGetCullingParameters(out var cullingParameters);
 		var cullingResults = ctx.ctx.Cull(ref cullingParameters);
 
@@ -96,21 +82,27 @@ public class CustomRenderPipeline : RenderPipeline
 			// DFS traverse of portals
 			foreach (var innerPortal in GetInnerPortals(ctx, portal))
 			{
-				// BUG: sometimes we get null portals here, which causes stack overflow
+				// could be moved to start/end of RenderPortal, but things work slightly nicer here
+				var sampleName = $"render portal {innerPortal} depth {currentDepth}";
+				ctx.cmd.BeginSample(sampleName);
+
+				PunchHole(ctx, innerPortal, ref currentDepth);
+
+				var localToWorld = ctx.cam.transform.localToWorldMatrix;
+				var proj = ctx.cam.projectionMatrix;
+				SetupCamera(ctx, innerPortal);
+
 				RenderPortal(ctx, innerPortal, currentDepth);
+
+				UnsetupCamera(ctx, localToWorld, proj);
+
+				UnpunchHole(ctx, innerPortal, ref currentDepth);
+
+				ctx.cmd.EndSample(sampleName);
 			}
 		}
 
 		DrawGeometry(ctx, cullingResults, false, currentDepth);
-
-		if (portal)
-		{
-			UnsetupCamera(ctx, localToWorld, proj);
-
-			UnpunchHole(ctx, portal, ref currentDepth);
-		}
-
-		ctx.cmd.EndSample(sampleName);
 	}
 
 	private IEnumerable<Portal> GetInnerPortals(RenderContext ctx, Portal portal)
