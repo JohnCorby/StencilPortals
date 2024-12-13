@@ -155,16 +155,38 @@ public class CustomRenderPipeline : RenderPipeline
 		var sampleName = $"setup camera from {fromPortal} to {toPortal}";
 		ctx.cmd.BeginSample(sampleName);
 
-		var p2pMatrix = toPortal.transform.localToWorldMatrix * Matrix4x4.Rotate(Quaternion.Euler(0, 180, 0)) * fromPortal.transform.worldToLocalMatrix;
+		{
+			var p2pMatrix = toPortal.transform.localToWorldMatrix * Matrix4x4.Rotate(Quaternion.Euler(0, 180, 0)) * fromPortal.transform.worldToLocalMatrix;
 
-		var newCamMatrix = p2pMatrix * ctx.cam.transform.localToWorldMatrix;
-		ctx.cam.transform.SetPositionAndRotation(
-			newCamMatrix.GetPosition(),
-			newCamMatrix.rotation
-		);
-		ctx.cmd.SetViewMatrix(ctx.cam.worldToCameraMatrix);
+			var newCamMatrix = p2pMatrix * ctx.cam.transform.localToWorldMatrix;
+			ctx.cam.transform.SetPositionAndRotation(
+				newCamMatrix.GetPosition(),
+				newCamMatrix.rotation
+			);
+			ctx.cmd.SetViewMatrix(ctx.cam.worldToCameraMatrix);
+		}
 
-		// TODO: set near plane
+		/*
+		// set near plane
+		{
+			Transform clipPlane = toPortal.transform;
+			int dot = System.Math.Sign (Vector3.Dot (clipPlane.forward, toPortal.transform.position - ctx.cam.transform.position));
+
+			Vector3 camSpacePos = ctx.cam.worldToCameraMatrix.MultiplyPoint (clipPlane.position);
+			Vector3 camSpaceNormal = ctx.cam.worldToCameraMatrix.MultiplyVector (clipPlane.forward) * dot;
+			float camSpaceDst = -Vector3.Dot (camSpacePos, camSpaceNormal) + 0;
+
+			// Don't use oblique clip plane if very close to portal as it seems this can cause some visual artifacts
+			{
+				Vector4 clipPlaneCameraSpace = new Vector4(camSpaceNormal.x, camSpaceNormal.y, camSpaceNormal.z, camSpaceDst);
+
+				// Update projection based on new clip plane
+				// Calculate matrix with player cam so that player camera settings (fov, etc) are used
+				ctx.cam.projectionMatrix = ctx.cam.CalculateObliqueMatrix(clipPlaneCameraSpace);
+			}
+			ctx.cmd.SetProjectionMatrix(ctx.cam.projectionMatrix);
+		}
+		*/
 		// TODO: confine frustum to portal using viewport etc
 
 		ctx.cmd.EndSample(sampleName);
