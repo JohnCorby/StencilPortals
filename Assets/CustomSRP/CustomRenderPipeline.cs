@@ -17,7 +17,7 @@ public class CustomRenderPipeline : RenderPipeline
 
 	protected override void Render(ScriptableRenderContext context, Camera[] cameras)
 	{
-		Portal.TempHackInit();
+		Portal.HACK_Validate();
 
 		foreach (var camera in cameras)
 		{

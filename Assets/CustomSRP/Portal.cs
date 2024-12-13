@@ -3,7 +3,6 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-[ExecuteAlways]
 [RequireComponent(typeof(Renderer))]
 public class Portal : MonoBehaviour
 {
@@ -26,22 +25,29 @@ public class Portal : MonoBehaviour
 		Debug.Log($"inner portals = {string.Join(",", InnerPortals)}", this);
 	}
 
-	[MenuItem("Tools/Init Portals")]
-	public static void InitPortals()
+
+	[MenuItem("Portals/HACK_Validate_Button")]
+	public static void HACK_Validate_Button()
 	{
-		foreach (var portal in FindObjectsByType<Portal>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+		AllPortals = FindObjectsByType<Portal>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+		foreach (var portal in AllPortals)
 		{
-			portal.Awake();
+			portal.Renderer = portal.GetComponent<Renderer>();
+			portal.InnerPortals = AllPortals.ToList();
+			portal.InnerPortals.Remove(portal);
 		}
 	}
 
-	public static void TempHackInit()
+	public static void HACK_Validate()
 	{
-		if (AllPortals == null)
+		if (AllPortals == null) AllPortals = FindObjectsByType<Portal>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+		foreach (var portal in AllPortals)
 		{
-			foreach (var portal in FindObjectsByType<Portal>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+			if (!portal.Renderer) portal.Renderer = portal.GetComponent<Renderer>();
+			if (portal.InnerPortals == null)
 			{
-				portal.Awake();
+				portal.InnerPortals = AllPortals.ToList();
+				portal.InnerPortals.Remove(portal);
 			}
 		}
 	}
