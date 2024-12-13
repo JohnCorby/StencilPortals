@@ -35,10 +35,14 @@ public class CustomRenderPipeline : RenderPipeline
 		public Camera cam;
 	}
 
+	private static Matrix4x4 originalProj;
+
 	private void RenderCamera(ScriptableRenderContext context, Camera camera)
 	{
 		// apparently we only need to do this once and not per portal
 		context.SetupCameraProperties(camera);
+
+		originalProj = camera.projectionMatrix;
 
 		var cmd = CommandBufferPool.Get();
 		var sampleName = $"render camera {camera}";
@@ -189,6 +193,7 @@ public class CustomRenderPipeline : RenderPipeline
 			ctx.cmd.SetViewMatrix(ctx.cam.worldToCameraMatrix);
 		}
 
+		/*
 		// set near plane
 		// stolen from sebastian. rewrite at some point
 		{
@@ -209,19 +214,24 @@ public class CustomRenderPipeline : RenderPipeline
 			}
 			ctx.cmd.SetProjectionMatrix(ctx.cam.projectionMatrix);
 		}
+		*/
 
 		// TODO: confine frustum to portal using viewport etc
 		{
-			var r = _asset.TestViewport;
-			ctx.cmd.SetViewport(r);
+			var rect = _asset.TestViewport;
+			// ctx.cmd.SetViewport(rect);
 
-			ctx.cam.ResetProjectionMatrix();
-			Matrix4x4 m = ctx.cam.projectionMatrix;
-			Matrix4x4 m2 = Matrix4x4.TRS(new Vector3((1 / r.width - 1), (1 / r.height - 1), 0), Quaternion.identity, new Vector3(1 / r.width, 1 / r.height, 1));
-			Matrix4x4 m3 = Matrix4x4.TRS(new Vector3(-r.x * 2 / r.width, -r.y * 2 / r.height, 0), Quaternion.identity, Vector3.one);
-			ctx.cam.projectionMatrix = m3 * m2 * m;
-			// var m2 = Matrix4x4.Frustum(r.left, r.right, r.top, r.bottom, ctx.cam.near, ctx.cam.far);
-			// ctx.cam.projectionMatrix = m2 * m;
+			var inverseWidth = 1 / rect.width;
+			var inverseHeight = 1 / rect.height;
+			var matrix1 = Matrix4x4.TRS(
+				new Vector3(-rect.x  * 2 * inverseWidth, -rect.y * 2 * inverseHeight, 0),
+				Quaternion.identity,
+				Vector3.one);
+			var matrix2 = Matrix4x4.TRS(
+				new Vector3(inverseWidth - 1, inverseHeight - 1, 0),
+				Quaternion.identity,
+				new Vector3(inverseWidth, inverseHeight, 1) );
+			ctx.cam.projectionMatrix = matrix2 * matrix1 * originalProj;
 			ctx.cmd.SetProjectionMatrix(ctx.cam.projectionMatrix);
 		}
 
@@ -243,7 +253,7 @@ public class CustomRenderPipeline : RenderPipeline
 		ctx.cmd.SetViewMatrix(ctx.cam.worldToCameraMatrix);
 		ctx.cam.projectionMatrix = proj;
 		ctx.cmd.SetProjectionMatrix(ctx.cam.projectionMatrix);
-		ctx.cmd.SetViewport(viewport);
+		// ctx.cmd.SetViewport(viewport);
 
 		ctx.cmd.EndSample(sampleName);
 	}
