@@ -105,6 +105,7 @@
         // unpunch hole pass
         Pass
         {
+            ZTest Always
             Stencil
             {
                 Ref [_StencilRef]
