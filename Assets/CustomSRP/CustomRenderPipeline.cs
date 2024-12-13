@@ -68,11 +68,28 @@ public class CustomRenderPipeline : RenderPipeline
 	/// </summary>
 	private void RenderPortal(RenderContext ctx, Portal portal, int currentDepth = 0)
 	{
-		var valid = ctx.cam.TryGetCullingParameters(out var cullingParameters);
-		if (!valid) return;
-		var cullingResults = ctx.ctx.Cull(ref cullingParameters);
+		var sampleName = $"render portal {portal} depth {currentDepth}";
+		ctx.cmd.BeginSample(sampleName);
 
-		ctx.ctx.SetupCameraProperties(ctx.cam);
+		Matrix4x4 localToWorld = default;
+		Matrix4x4 proj = default;
+		if (portal)
+		{
+			PunchHole(ctx, portal, ref currentDepth);
+
+			localToWorld = ctx.cam.transform.localToWorldMatrix;
+			proj = ctx.cam.projectionMatrix;
+			SetupCamera(ctx, portal);
+		}
+
+		CullingResults cullingResults;
+		{
+			var valid = ctx.cam.TryGetCullingParameters(out var cullingParameters);
+			if (!valid) return;
+			cullingResults = ctx.ctx.Cull(ref cullingParameters);
+
+			ctx.ctx.SetupCameraProperties(ctx.cam);
+		}
 
 		DrawGeometry(ctx, cullingResults, true, currentDepth);
 
@@ -81,26 +98,20 @@ public class CustomRenderPipeline : RenderPipeline
 			// DFS traverse of portals
 			foreach (var innerPortal in GetInnerPortals(ctx, portal))
 			{
-				var sampleName = $"render portal {innerPortal} depth {currentDepth}";
-				ctx.cmd.BeginSample(sampleName);
-
-				PunchHole(ctx, innerPortal, ref currentDepth);
-
-				var localToWorld = ctx.cam.transform.localToWorldMatrix;
-				var proj = ctx.cam.projectionMatrix;
-				SetupCamera(ctx, innerPortal);
-
 				RenderPortal(ctx, innerPortal, currentDepth);
-
-				UnsetupCamera(ctx, localToWorld, proj);
-
-				UnpunchHole(ctx, innerPortal, ref currentDepth);
-
-				ctx.cmd.EndSample(sampleName);
 			}
 		}
 
 		DrawGeometry(ctx, cullingResults, false, currentDepth);
+
+		if (portal)
+		{
+			UnsetupCamera(ctx, localToWorld, proj);
+
+			UnpunchHole(ctx, portal, ref currentDepth);
+		}
+
+		ctx.cmd.EndSample(sampleName);
 	}
 
 	private IEnumerable<Portal> GetInnerPortals(RenderContext ctx, Portal portal)
@@ -175,11 +186,11 @@ public class CustomRenderPipeline : RenderPipeline
 		// stolen from sebastian. rewrite at some point
 		{
 			Transform clipPlane = toPortal.transform;
-			int dot = System.Math.Sign (Vector3.Dot (clipPlane.forward, toPortal.transform.position - ctx.cam.transform.position));
+			int dot = System.Math.Sign(Vector3.Dot(clipPlane.forward, toPortal.transform.position - ctx.cam.transform.position));
 
-			Vector3 camSpacePos = ctx.cam.worldToCameraMatrix.MultiplyPoint (clipPlane.position);
-			Vector3 camSpaceNormal = ctx.cam.worldToCameraMatrix.MultiplyVector (clipPlane.forward) * dot;
-			float camSpaceDst = -Vector3.Dot (camSpacePos, camSpaceNormal) + 0;
+			Vector3 camSpacePos = ctx.cam.worldToCameraMatrix.MultiplyPoint(clipPlane.position);
+			Vector3 camSpaceNormal = ctx.cam.worldToCameraMatrix.MultiplyVector(clipPlane.forward) * dot;
+			float camSpaceDst = -Vector3.Dot(camSpacePos, camSpaceNormal) + 0;
 
 			// Don't use oblique clip plane if very close to portal as it seems this can cause some visual artifacts
 			{
