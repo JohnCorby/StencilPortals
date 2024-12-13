@@ -22,6 +22,8 @@ public class CustomRenderPipeline : RenderPipeline
 		foreach (var camera in cameras)
 		{
 			RenderCamera(context, camera);
+			// orientation gizmo breaks unless we do this
+			camera.ResetProjectionMatrix();
 		}
 	}
 
@@ -47,8 +49,6 @@ public class CustomRenderPipeline : RenderPipeline
 			cam = camera,
 		};
 		RenderPortal(ctx, null);
-
-		cmd.SetViewMatrix(ctx.cam.worldToCameraMatrix);
 
 		// just shove this at the end for now
 		cmd.DrawRendererList(context.CreateSkyboxRendererList(camera));
