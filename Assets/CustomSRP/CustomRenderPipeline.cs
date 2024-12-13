@@ -68,9 +68,6 @@ public class CustomRenderPipeline : RenderPipeline
 	/// </summary>
 	private void RenderPortal(RenderContext ctx, Portal portal, int currentDepth = 0)
 	{
-		var sampleName = $"render portal {portal}";
-		ctx.cmd.BeginSample(sampleName);
-
 		var valid = ctx.cam.TryGetCullingParameters(out var cullingParameters);
 		if (!valid) return;
 		var cullingResults = ctx.ctx.Cull(ref cullingParameters);
@@ -84,6 +81,9 @@ public class CustomRenderPipeline : RenderPipeline
 			// DFS traverse of portals
 			foreach (var innerPortal in GetInnerPortals(ctx, portal))
 			{
+				var sampleName = $"render portal {innerPortal} depth {currentDepth}";
+				ctx.cmd.BeginSample(sampleName);
+
 				PunchHole(ctx, innerPortal, ref currentDepth);
 
 				SetupCamera(ctx, innerPortal, innerPortal.LinkedPortal, true);
@@ -93,12 +93,12 @@ public class CustomRenderPipeline : RenderPipeline
 				SetupCamera(ctx, innerPortal.LinkedPortal, innerPortal, true);
 
 				UnpunchHole(ctx, innerPortal, ref currentDepth);
+
+				ctx.cmd.EndSample(sampleName);
 			}
 		}
 
 		DrawGeometry(ctx, cullingResults, false, currentDepth);
-
-		ctx.cmd.EndSample(sampleName);
 	}
 
 	private IEnumerable<Portal> GetInnerPortals(RenderContext ctx, Portal portal)
@@ -112,7 +112,7 @@ public class CustomRenderPipeline : RenderPipeline
 	/// </summary>
 	private void PunchHole(RenderContext ctx, Portal portal, ref int currentDepth)
 	{
-		var sampleName = $"punch hole for {portal}";
+		var sampleName = $"punch hole";
 		ctx.cmd.BeginSample(sampleName);
 
 		// read and incr
@@ -133,7 +133,7 @@ public class CustomRenderPipeline : RenderPipeline
 	/// </summary>
 	private void UnpunchHole(RenderContext ctx, Portal portal, ref int currentDepth)
 	{
-		var sampleName = $"unpunch hole for {portal}";
+		var sampleName = $"unpunch hole";
 		ctx.cmd.BeginSample(sampleName);
 
 		// read and decr

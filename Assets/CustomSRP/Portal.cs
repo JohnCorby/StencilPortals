@@ -21,6 +21,7 @@ public class Portal : MonoBehaviour
 		if (AllPortals == null) AllPortals = FindObjectsByType<Portal>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
 		InnerPortals = AllPortals.ToList();
 		InnerPortals.Remove(this);
+		// InnerPortals.Remove(LinkedPortal);
 
 		Debug.Log($"inner portals = {string.Join(",", InnerPortals)}", this);
 	}
