@@ -5,6 +5,11 @@
     {
         Pass
         {
+            Tags
+            {
+                "LightMode" = "CustomUnlit"
+            }
+
             HLSLPROGRAM
             #pragma vertex UnlitPassVertex
             #pragma fragment UnlitPassFragment
@@ -39,7 +44,7 @@
 
             float4 UnlitPassFragment(float4 positionCS : SV_POSITION) : SV_Target
             {
-                return float4(positionCS.z,0,0,1);
+                return float4(positionCS.z, 0, 0, 1);
             }
             ENDHLSL
         }

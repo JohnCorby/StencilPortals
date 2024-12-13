@@ -329,7 +329,7 @@ Camera:
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 55
+    m_Bits: 4294967295
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
@@ -534,7 +534,7 @@ GameObject:
   - component: {fileID: 411280469}
   - component: {fileID: 411280468}
   - component: {fileID: 411280467}
-  m_Layer: 3
+  m_Layer: 0
   m_Name: Portal 1A
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -982,7 +982,7 @@ GameObject:
   - component: {fileID: 676914037}
   - component: {fileID: 676914036}
   - component: {fileID: 676914035}
-  m_Layer: 3
+  m_Layer: 0
   m_Name: Portal 2B
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2847,7 +2847,7 @@ GameObject:
   - component: {fileID: 1682084457}
   - component: {fileID: 1682084458}
   - component: {fileID: 1682084456}
-  m_Layer: 3
+  m_Layer: 0
   m_Name: Portal 2A
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3331,7 +3331,7 @@ GameObject:
   - component: {fileID: 1831892345}
   - component: {fileID: 1831892344}
   - component: {fileID: 1831892343}
-  m_Layer: 3
+  m_Layer: 0
   m_Name: Portal 1B
   m_TagString: Untagged
   m_Icon: {fileID: 0}

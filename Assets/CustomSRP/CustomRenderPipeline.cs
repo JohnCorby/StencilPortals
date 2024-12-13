@@ -230,7 +230,7 @@ public class CustomRenderPipeline : RenderPipeline
 		var sampleName = $"draw geometry {(opaque ? "opaque" : "transparent")}";
 		ctx.cmd.BeginSample(sampleName);
 
-		var rendererListDesc = new RendererListDesc(new ShaderTagId("SRPDefaultUnlit"), cullingResults, ctx.cam)
+		var rendererListDesc = new RendererListDesc(new ShaderTagId("CustomUnlit"), cullingResults, ctx.cam)
 		{
 			sortingCriteria = opaque ? SortingCriteria.CommonOpaque : SortingCriteria.CommonTransparent,
 			renderQueueRange = opaque ? RenderQueueRange.opaque : RenderQueueRange.transparent,

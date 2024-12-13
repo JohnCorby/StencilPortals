@@ -3,6 +3,11 @@
     Properties {}
     SubShader
     {
+        Tags
+        {
+            "LightMode" = "PortalPasses"
+        }
+
         // punch hole pass
         Pass
         {
