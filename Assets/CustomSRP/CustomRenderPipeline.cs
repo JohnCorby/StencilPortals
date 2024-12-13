@@ -171,8 +171,8 @@ public class CustomRenderPipeline : RenderPipeline
 			ctx.cmd.SetViewMatrix(ctx.cam.worldToCameraMatrix);
 		}
 
-		/*
 		// set near plane
+		// stolen from sebastian. rewrite at some point
 		{
 			Transform clipPlane = toPortal.transform;
 			int dot = System.Math.Sign (Vector3.Dot (clipPlane.forward, toPortal.transform.position - ctx.cam.transform.position));
@@ -191,7 +191,7 @@ public class CustomRenderPipeline : RenderPipeline
 			}
 			ctx.cmd.SetProjectionMatrix(ctx.cam.projectionMatrix);
 		}
-		*/
+
 		// TODO: confine frustum to portal using viewport etc
 
 		ctx.cmd.EndSample(sampleName);
@@ -207,7 +207,8 @@ public class CustomRenderPipeline : RenderPipeline
 			localToWorld.rotation
 		);
 		ctx.cmd.SetViewMatrix(ctx.cam.worldToCameraMatrix);
-		ctx.cmd.SetProjectionMatrix(proj);
+		ctx.cam.projectionMatrix = proj;
+		ctx.cmd.SetProjectionMatrix(ctx.cam.projectionMatrix);
 
 		ctx.cmd.EndSample(sampleName);
 	}
