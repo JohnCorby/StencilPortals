@@ -86,11 +86,11 @@ public class CustomRenderPipeline : RenderPipeline
 			{
 				PunchHole(ctx, innerPortal, ref currentDepth);
 
-				SetupCamera(ctx, portal, innerPortal, true);
+				SetupCamera(ctx, innerPortal, innerPortal.LinkedPortal, true);
 
 				RenderPortal(ctx, innerPortal, currentDepth);
 
-				SetupCamera(ctx, innerPortal, portal, false);
+				SetupCamera(ctx, innerPortal.LinkedPortal, innerPortal, true);
 
 				UnpunchHole(ctx, innerPortal, ref currentDepth);
 			}
@@ -155,26 +155,14 @@ public class CustomRenderPipeline : RenderPipeline
 		var sampleName = $"setup camera from {fromPortal} to {toPortal}";
 		ctx.cmd.BeginSample(sampleName);
 
-		/*
-		var p2pMatrix = toPortal.transform.localToWorldMatrix * fromPortal.transform.worldToLocalMatrix;
+		var p2pMatrix = toPortal.transform.localToWorldMatrix * Matrix4x4.Rotate(Quaternion.Euler(0, 180, 0)) * fromPortal.transform.worldToLocalMatrix;
 
 		var newCamMatrix = p2pMatrix * ctx.cam.transform.localToWorldMatrix;
 		ctx.cam.transform.SetPositionAndRotation(
 			newCamMatrix.GetPosition(),
 			newCamMatrix.rotation
 		);
-		*/
-
-		if (temp)
-		{
-			ctx.cam.transform.position += Vector3.up;
-			ctx.cmd.SetViewMatrix(ctx.cam.worldToCameraMatrix);
-		}
-		else
-		{
-			ctx.cam.transform.position -= Vector3.up;
-			ctx.cmd.SetViewMatrix(ctx.cam.worldToCameraMatrix);
-		}
+		ctx.cmd.SetViewMatrix(ctx.cam.worldToCameraMatrix);
 
 		// TODO: set near plane
 		// TODO: confine frustum to portal using viewport etc
