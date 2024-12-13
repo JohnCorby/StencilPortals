@@ -104,7 +104,8 @@ public class CustomRenderPipeline : RenderPipeline
 
 		DrawGeometry(ctx, cullingResults, false, currentDepth);
 
-		// cant check stencil unless we do it in skybox material, but it works fine anyway cuz depth
+		// cant check stencil without making new skybox material
+		// its okay because the correct skybox gets drawn over everything last
 		ctx.cmd.DrawRendererList(ctx.ctx.CreateSkyboxRendererList(ctx.cam));
 	}
 
