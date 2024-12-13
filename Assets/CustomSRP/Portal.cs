@@ -19,8 +19,7 @@ public class Portal : MonoBehaviour
 
 		if (AllPortals == null) AllPortals = FindObjectsByType<Portal>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
 		InnerPortals = AllPortals.ToList();
-		InnerPortals.Remove(this);
-		// InnerPortals.Remove(LinkedPortal);
+		InnerPortals.Remove(LinkedPortal);
 
 		Debug.Log($"inner portals = {string.Join(",", InnerPortals)}", this);
 	}
@@ -34,7 +33,7 @@ public class Portal : MonoBehaviour
 		{
 			portal.Renderer = portal.GetComponent<Renderer>();
 			portal.InnerPortals = AllPortals.ToList();
-			portal.InnerPortals.Remove(portal);
+			portal.InnerPortals.Remove(portal.LinkedPortal);
 		}
 	}
 
@@ -47,7 +46,7 @@ public class Portal : MonoBehaviour
 			if (portal.InnerPortals == null)
 			{
 				portal.InnerPortals = AllPortals.ToList();
-				portal.InnerPortals.Remove(portal);
+				portal.InnerPortals.Remove(portal.LinkedPortal);
 			}
 		}
 	}
