@@ -86,11 +86,13 @@ public class CustomRenderPipeline : RenderPipeline
 
 				PunchHole(ctx, innerPortal, ref currentDepth);
 
-				SetupCamera(ctx, innerPortal, innerPortal.LinkedPortal, true);
+				var localToWorld = ctx.cam.transform.localToWorldMatrix;
+				var proj = ctx.cam.projectionMatrix;
+				SetupCamera(ctx, innerPortal);
 
 				RenderPortal(ctx, innerPortal, currentDepth);
 
-				SetupCamera(ctx, innerPortal.LinkedPortal, innerPortal, true);
+				UnsetupCamera(ctx, localToWorld, proj);
 
 				UnpunchHole(ctx, innerPortal, ref currentDepth);
 
@@ -148,9 +150,12 @@ public class CustomRenderPipeline : RenderPipeline
 	/// <summary>
 	/// setup camera matrices and viewport
 	/// </summary>
-	private void SetupCamera(RenderContext ctx, Portal fromPortal, Portal toPortal, bool temp)
+	private void SetupCamera(RenderContext ctx, Portal portal)
 	{
 		// if (!fromPortal || !toPortal) return;
+
+		var fromPortal = portal;
+		var toPortal = portal.LinkedPortal;
 
 		var sampleName = $"setup camera from {fromPortal} to {toPortal}";
 		ctx.cmd.BeginSample(sampleName);
@@ -191,6 +196,22 @@ public class CustomRenderPipeline : RenderPipeline
 
 		ctx.cmd.EndSample(sampleName);
 	}
+
+	private void UnsetupCamera(RenderContext ctx, Matrix4x4 localToWorld, Matrix4x4 proj)
+	{
+		var sampleName = $"unsetup camera";
+		ctx.cmd.BeginSample(sampleName);
+
+		ctx.cam.transform.SetPositionAndRotation(
+			localToWorld.GetPosition(),
+			localToWorld.rotation
+		);
+		ctx.cmd.SetViewMatrix(ctx.cam.worldToCameraMatrix);
+		ctx.cmd.SetProjectionMatrix(proj);
+
+		ctx.cmd.EndSample(sampleName);
+	}
+
 
 	private void DrawGeometry(RenderContext ctx, CullingResults cullingResults, bool opaque, int currentDepth)
 	{
