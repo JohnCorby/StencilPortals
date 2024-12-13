@@ -8,6 +8,9 @@ public class Portal : MonoBehaviour
 {
 	public static Portal[] AllPortals { get; private set; }
 
+	/// <summary>
+	/// PVS of portals this portal can see
+	/// </summary>
 	public List<Portal> InnerPortals { get; private set; }
 
 	public Renderer Renderer { get; private set; }
@@ -25,8 +28,8 @@ public class Portal : MonoBehaviour
 	}
 
 
-	[MenuItem("Portals/HACK_Validate_Button")]
-	public static void HACK_Validate_Button()
+	[MenuItem("Portals/(DEBUG) Rebuild")]
+	public static void DEBUG_Rebuild()
 	{
 		AllPortals = FindObjectsByType<Portal>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
 		foreach (var portal in AllPortals)
@@ -37,6 +40,7 @@ public class Portal : MonoBehaviour
 		}
 	}
 
+	// stupid and should be removed at some point
 	public static void HACK_Validate()
 	{
 		if (AllPortals == null) AllPortals = FindObjectsByType<Portal>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);

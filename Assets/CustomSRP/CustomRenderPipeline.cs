@@ -4,7 +4,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.RendererUtils;
 
 /// <summary>
-/// based on https://docs.google.com/document/d/1LHPYsLO8YfwPQLLgAokjVDdtufuwKa7nnPRX3bM35zA/edit?usp=sharing
+/// based on paper and https://catlikecoding.com/unity/tutorials/custom-srp/custom-render-pipeline/
 /// </summary>
 public class CustomRenderPipeline : RenderPipeline
 {
@@ -51,8 +51,7 @@ public class CustomRenderPipeline : RenderPipeline
 		};
 		RenderPortal(ctx, null);
 
-		// just shove this at the end for now
-		cmd.DrawRendererList(context.CreateSkyboxRendererList(camera));
+		// cant render this per portal, it doesnt move for some reason
 		cmd.DrawRendererList(context.CreateGizmoRendererList(camera, GizmoSubset.PreImageEffects));
 		cmd.DrawRendererList(context.CreateGizmoRendererList(camera, GizmoSubset.PostImageEffects));
 
@@ -82,7 +81,7 @@ public class CustomRenderPipeline : RenderPipeline
 			// DFS traverse of portals
 			foreach (var innerPortal in GetInnerPortals(ctx, portal))
 			{
-				// could be moved to start/end of RenderPortal, but things work slightly nicer here
+				// could be moved to start/end of RenderPortal, but the code reads nicer like this
 				var sampleName = $"render portal {innerPortal} depth {currentDepth}";
 				ctx.cmd.BeginSample(sampleName);
 
@@ -103,10 +102,14 @@ public class CustomRenderPipeline : RenderPipeline
 		}
 
 		DrawGeometry(ctx, cullingResults, false, currentDepth);
+
+		// cant check stencil unless we do it in skybox material, but it works fine anyway cuz depth
+		ctx.cmd.DrawRendererList(ctx.ctx.CreateSkyboxRendererList(ctx.cam));
 	}
 
 	private IEnumerable<Portal> GetInnerPortals(RenderContext ctx, Portal portal)
 	{
+		// TODO: cull portals based on camera
 		return portal ? portal.InnerPortals : Portal.AllPortals;
 	}
 
@@ -119,12 +122,14 @@ public class CustomRenderPipeline : RenderPipeline
 		var sampleName = $"punch hole";
 		ctx.cmd.BeginSample(sampleName);
 
-		// read and incr
+		// read stencil and incr
+		// reads from depth here so things in front stay in front
 		ctx.cmd.SetGlobalInt("_StencilRef", currentDepth);
 		ctx.cmd.DrawRenderer(portal.Renderer, _asset.PortalPassesMaterial, 0, 0);
 		currentDepth++;
 
-		// ovewrite depth
+		// read stencil and ovewrite depth
+		// dont care about depth cuz we check stencil
 		ctx.cmd.SetGlobalInt("_StencilRef", currentDepth);
 		ctx.cmd.DrawRenderer(portal.Renderer, _asset.PortalPassesMaterial, 0, 1);
 
@@ -140,8 +145,9 @@ public class CustomRenderPipeline : RenderPipeline
 		var sampleName = $"unpunch hole";
 		ctx.cmd.BeginSample(sampleName);
 
-		// read and decr
+		// read stencil and decr
 		// write quad depth
+		// dont care about depth cuz we check stencil
 		ctx.cmd.SetGlobalInt("_StencilRef", currentDepth);
 		ctx.cmd.DrawRenderer(portal.Renderer, _asset.PortalPassesMaterial, 0, 2);
 		currentDepth--;
@@ -154,8 +160,6 @@ public class CustomRenderPipeline : RenderPipeline
 	/// </summary>
 	private void SetupCamera(RenderContext ctx, Portal portal)
 	{
-		// if (!fromPortal || !toPortal) return;
-
 		var fromPortal = portal;
 		var toPortal = portal.LinkedPortal;
 
@@ -166,6 +170,7 @@ public class CustomRenderPipeline : RenderPipeline
 			var p2pMatrix = toPortal.transform.localToWorldMatrix * Matrix4x4.Rotate(Quaternion.Euler(0, 180, 0)) * fromPortal.transform.worldToLocalMatrix;
 
 			var newCamMatrix = p2pMatrix * ctx.cam.transform.localToWorldMatrix;
+			// actually move camera so culling happens. could edit cullingMatrix instead but whatever
 			ctx.cam.transform.SetPositionAndRotation(
 				newCamMatrix.GetPosition(),
 				newCamMatrix.rotation
@@ -199,6 +204,9 @@ public class CustomRenderPipeline : RenderPipeline
 		ctx.cmd.EndSample(sampleName);
 	}
 
+	/// <summary>
+	/// undo matrices and viewport
+	/// </summary>
 	private void UnsetupCamera(RenderContext ctx, Matrix4x4 localToWorld, Matrix4x4 proj)
 	{
 		var sampleName = $"unsetup camera";
@@ -231,8 +239,7 @@ public class CustomRenderPipeline : RenderPipeline
 				stencilReference = currentDepth
 			}
 		};
-		var rendererList = ctx.ctx.CreateRendererList(rendererListDesc);
-		ctx.cmd.DrawRendererList(rendererList);
+		ctx.cmd.DrawRendererList(ctx.ctx.CreateRendererList(rendererListDesc));
 
 		ctx.cmd.EndSample(sampleName);
 	}

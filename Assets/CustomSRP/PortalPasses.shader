@@ -53,6 +53,7 @@
 
             void UnlitPassFragment()
             {
+                // write nothing
             }
             ENDHLSL
         }
@@ -99,9 +100,9 @@
                 return TransformObjectToHClip(positionOS);
             }
 
-            float UnlitPassFragment(out float4 col : SV_Target) : SV_Depth
+            float UnlitPassFragment() : SV_Depth
             {
-                col = 0; // temp
+                // write only depth
                 return 0;
             }
             ENDHLSL
@@ -152,6 +153,7 @@
 
             void UnlitPassFragment()
             {
+                // write nothing
             }
             ENDHLSL
         }
