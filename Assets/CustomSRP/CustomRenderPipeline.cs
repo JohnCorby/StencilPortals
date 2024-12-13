@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RendererUtils;
@@ -109,8 +110,14 @@ public class CustomRenderPipeline : RenderPipeline
 
 	private IEnumerable<Portal> GetInnerPortals(RenderContext ctx, Portal portal)
 	{
-		// TODO: cull portals based on camera
-		return portal ? portal.InnerPortals : Portal.AllPortals;
+		IEnumerable<Portal> portals = portal ? portal.InnerPortals : Portal.AllPortals;
+
+		// cull based on frustum
+		var planes = new Plane[6];
+		GeometryUtility.CalculateFrustumPlanes(ctx.cam, planes);
+		portals = portals.Where(x => GeometryUtility.TestPlanesAABB(planes, x.Renderer.bounds));
+
+		return portals;
 	}
 
 	/// <summary>

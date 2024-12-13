@@ -3,6 +3,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
+[ExecuteAlways]
 [RequireComponent(typeof(Renderer))]
 public class Portal : MonoBehaviour
 {
@@ -28,7 +29,7 @@ public class Portal : MonoBehaviour
 	}
 
 
-	[MenuItem("Portals/(DEBUG) Rebuild")]
+	[MenuItem("Portals/DEBUG Rebuild")]
 	public static void DEBUG_Rebuild()
 	{
 		AllPortals = FindObjectsByType<Portal>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
