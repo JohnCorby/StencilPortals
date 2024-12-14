@@ -1,4 +1,4 @@
-﻿Shader "Custom SRP/Unlit"
+﻿Shader "Custom SRP/Lit"
 {
     Properties {}
     SubShader
@@ -7,12 +7,12 @@
         {
             Tags
             {
-                "LightMode" = "CustomUnlit"
+                "LightMode" = "CustomLit"
             }
 
             HLSLPROGRAM
-            #pragma vertex UnlitPassVertex
-            #pragma fragment UnlitPassFragment
+            #pragma vertex LitPassVertex
+            #pragma fragment LitPassFragment
 
             #define UNITY_MATRIX_M unity_ObjectToWorld
             #define UNITY_MATRIX_I_M unity_WorldToObject
@@ -36,15 +36,33 @@
 
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
 
-            float4 UnlitPassVertex(float4 positionOS : POSITION) : SV_POSITION
+            struct Attributes
             {
-                return TransformObjectToHClip(positionOS);
+                float3 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float3 normalWS : TEXCOORD0;
+            };
+
+            Varyings LitPassVertex(Attributes input)
+            {
+                Varyings output;
+                output.positionCS = TransformObjectToHClip(input.positionOS);
+                output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+                return output;
             }
 
-            float4 UnlitPassFragment(float4 positionCS : SV_POSITION) : SV_Target
+            float3 LitPassFragment(Varyings input) : SV_Target
             {
-                return float4(positionCS.z, 0, 0, 1);
+                float3 lightDirWS = normalize(float3(1, 1, 1));
+                float3 ramp = saturate(dot(input.normalWS, lightDirWS) * .5 + .5);
+                return SRGBToLinear(ramp);
             }
             ENDHLSL
         }
