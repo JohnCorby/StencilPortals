@@ -92,7 +92,7 @@ public class CustomRenderPipeline : RenderPipeline
 
 				var localToWorld = ctx.cam.transform.localToWorldMatrix;
 				var proj = ctx.cam.projectionMatrix;
-				var viewport = currentDepth == 1 ? new Rect(0, 0, ctx.cam.pixelWidth, ctx.cam.pixelHeight) : _asset.TestViewport;
+				var viewport = GetBoundingRectangle(ctx, portal);
 				SetupCamera(ctx, innerPortal);
 
 				RenderPortal(ctx, innerPortal, currentDepth);
@@ -166,6 +166,27 @@ public class CustomRenderPipeline : RenderPipeline
 		ctx.cmd.EndSample(sampleName);
 	}
 
+	public Rect GetBoundingRectangle(RenderContext ctx, Portal portal)
+	{
+		if (!portal) return new Rect(0, 0, ctx.cam.pixelWidth, ctx.cam.pixelHeight);
+
+		var localCorners = new[]
+		{
+			portal.transform.localPosition + new Vector3(1, 1),
+			portal.transform.localPosition + new Vector3(-1, -1),
+			portal.transform.localPosition + new Vector3(-1, 1),
+			portal.transform.localPosition + new Vector3(1, -1),
+		};
+		var screenCorners = localCorners.Select(x => ctx.cam.WorldToScreenPoint(portal.transform.TransformPoint(x)));
+
+		var left = screenCorners.Select(x => x.x).Min();
+		var right = screenCorners.Select(x => x.x).Max();
+		var bottom = screenCorners.Select(x => x.y).Min();
+		var top = screenCorners.Select(x => x.y).Max();
+
+		return new Rect(left, bottom, right - left, top - bottom);
+	}
+
 	/// <summary>
 	/// setup camera matrices and viewport
 	/// </summary>
@@ -213,7 +234,11 @@ public class CustomRenderPipeline : RenderPipeline
 		// confine frustum to portal
 		// https://github.com/MagnusCaligo/Outer_Portals/blob/master/Outer_Portals/PortalController.cs#L143-L157
 		{
-			var viewport = _asset.TestViewport;
+			var viewport = GetBoundingRectangle(ctx, portal);
+			// viewport.x = Mathf.Round(viewport.x);
+			// viewport.y = Mathf.Round(viewport.y);
+			// viewport.width = Mathf.Clamp(Mathf.Round(viewport.width), 1, ctx.cam.pixelWidth);
+			// viewport.height = Mathf.Clamp(Mathf.Round(viewport.height), 1, ctx.cam.pixelHeight);
 
 			//Matrix4x4 m = Locator.GetPlayerCamera().mainCamera.projectionMatrix;
 			// ctx.cam.ResetProjectionMatrix();

@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: CustomRenderPipelineAsset
   m_EditorClassIdentifier: 
   PortalPassesMaterial: {fileID: 2100000, guid: f9ee3b84a06335c45afa9832e7930a5c, type: 2}
-  MaxDepth: 7
+  MaxDepth: 1
   TestViewport:
     serializedVersion: 2
-    x: 0
-    y: 0
-    width: 1920
-    height: 1080
+    x: 176.3
+    y: 133.8
+    width: 100
+    height: 100
