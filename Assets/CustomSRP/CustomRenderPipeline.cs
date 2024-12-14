@@ -189,9 +189,8 @@ public class CustomRenderPipeline : RenderPipeline
 			ctx.cmd.SetViewMatrix(ctx.cam.worldToCameraMatrix);
 		}
 
-		/*
 		// set near plane
-		// stolen from sebastian. rewrite at some point
+		// https://github.com/SebLague/Portals/blob/master/Assets/Scripts/Core/Portal.cs#L250-L272
 		{
 			Transform clipPlane = toPortal.transform;
 			int dot = System.Math.Sign(Vector3.Dot(clipPlane.forward, toPortal.transform.position - ctx.cam.transform.position));
@@ -210,15 +209,14 @@ public class CustomRenderPipeline : RenderPipeline
 				ctx.cmd.SetProjectionMatrix(ctx.cam.projectionMatrix);
 			}
 		}
-		*/
 
 		// confine frustum to portal
-		// stolen from outer portals
+		// https://github.com/MagnusCaligo/Outer_Portals/blob/master/Outer_Portals/PortalController.cs#L143-L157
 		{
 			var viewport = _asset.TestViewport;
 
 			//Matrix4x4 m = Locator.GetPlayerCamera().mainCamera.projectionMatrix;
-			ctx.cam.ResetProjectionMatrix();
+			// ctx.cam.ResetProjectionMatrix();
 			Matrix4x4 m = ctx.cam.projectionMatrix;
 			// if (cam.rect.size != r.size) NHLogger.Log($"changing {this} rect from {cam.rect} to {r}");
 			ctx.cmd.SetViewport(viewport);
@@ -227,6 +225,7 @@ public class CustomRenderPipeline : RenderPipeline
 
 			// this expects 0-1, so divide
 			var r = new Rect(viewport.x / ctx.cam.pixelWidth, viewport.y / ctx.cam.pixelHeight, viewport.width / ctx.cam.pixelWidth, viewport.height / ctx.cam.pixelHeight);
+			// reverse effects of viewport
 			Matrix4x4 m2 = Matrix4x4.TRS(new Vector3((1 / r.width - 1), (1 / r.height - 1), 0), Quaternion.identity, new Vector3(1 / r.width, 1 / r.height, 1));
 			Matrix4x4 m3 = Matrix4x4.TRS(new Vector3(-r.x * 2 / r.width, -r.y * 2 / r.height, 0), Quaternion.identity, Vector3.one);
 			ctx.cam.projectionMatrix = m3 * m2 * m;
