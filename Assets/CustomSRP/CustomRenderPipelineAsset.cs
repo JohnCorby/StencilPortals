@@ -8,8 +8,6 @@ public class CustomRenderPipelineAsset : RenderPipelineAsset<CustomRenderPipelin
 	[Range(0, 10)]
 	public int MaxDepth = 1;
 
-	public Rect TestViewport = new Rect(0, 0, 1920, 1080);
-
 	protected override RenderPipeline CreatePipeline()
 	{
 		return new CustomRenderPipeline(this);

@@ -109,6 +109,7 @@ public class CustomRenderPipeline : RenderPipeline
 
 		// cant check stencil without making new skybox material
 		// its okay because the correct skybox gets drawn over everything last
+		// BUG: gets shifted around by viewport projection
 		ctx.cmd.DrawRendererList(ctx.ctx.CreateSkyboxRendererList(ctx.cam));
 	}
 
@@ -170,14 +171,18 @@ public class CustomRenderPipeline : RenderPipeline
 	{
 		if (!portal) return new Rect(0, 0, ctx.cam.pixelWidth, ctx.cam.pixelHeight);
 
-		var localCorners = new[]
+		// var screenPoint = ctx.cam.WorldToScreenPoint(portal.transform.position);
+		// return new Rect(screenPoint.x - 100, screenPoint.y - 100, 200, 200);
+
+		// bad
+		var worldCorners = new[]
 		{
-			portal.transform.localPosition + new Vector3(1, 1),
-			portal.transform.localPosition + new Vector3(-1, -1),
-			portal.transform.localPosition + new Vector3(-1, 1),
-			portal.transform.localPosition + new Vector3(1, -1),
+			portal.transform.position + portal.transform.up + portal.transform.right,
+			portal.transform.position - portal.transform.up - portal.transform.right,
+			portal.transform.position - portal.transform.up + portal.transform.right,
+			portal.transform.position + portal.transform.up - portal.transform.right,
 		};
-		var screenCorners = localCorners.Select(x => ctx.cam.WorldToScreenPoint(portal.transform.TransformPoint(x)));
+		var screenCorners = worldCorners.Select(x => ctx.cam.WorldToScreenPoint(x));
 
 		var left = screenCorners.Select(x => x.x).Min();
 		var right = screenCorners.Select(x => x.x).Max();
@@ -198,43 +203,10 @@ public class CustomRenderPipeline : RenderPipeline
 		var sampleName = $"setup camera from {fromPortal} to {toPortal}";
 		ctx.cmd.BeginSample(sampleName);
 
-		{
-			var p2pMatrix = toPortal.transform.localToWorldMatrix * Matrix4x4.Rotate(Quaternion.Euler(0, 180, 0)) * fromPortal.transform.worldToLocalMatrix;
-
-			var newCamMatrix = p2pMatrix * ctx.cam.transform.localToWorldMatrix;
-			// actually move camera so culling happens. could edit cullingMatrix instead but whatever
-			ctx.cam.transform.SetPositionAndRotation(
-				newCamMatrix.GetPosition(),
-				newCamMatrix.rotation
-			);
-			ctx.cmd.SetViewMatrix(ctx.cam.worldToCameraMatrix);
-		}
-
-		// set near plane
-		// https://github.com/SebLague/Portals/blob/master/Assets/Scripts/Core/Portal.cs#L250-L272
-		{
-			Transform clipPlane = toPortal.transform;
-			int dot = System.Math.Sign(Vector3.Dot(clipPlane.forward, toPortal.transform.position - ctx.cam.transform.position));
-
-			Vector3 camSpacePos = ctx.cam.worldToCameraMatrix.MultiplyPoint(clipPlane.position);
-			Vector3 camSpaceNormal = ctx.cam.worldToCameraMatrix.MultiplyVector(clipPlane.forward) * dot;
-			float camSpaceDst = -Vector3.Dot(camSpacePos, camSpaceNormal) + 0;
-
-			// Don't use oblique clip plane if very close to portal as it seems this can cause some visual artifacts
-			{
-				Vector4 clipPlaneCameraSpace = new Vector4(camSpaceNormal.x, camSpaceNormal.y, camSpaceNormal.z, camSpaceDst);
-
-				// Update projection based on new clip plane
-				// Calculate matrix with player cam so that player camera settings (fov, etc) are used
-				ctx.cam.projectionMatrix = ctx.cam.CalculateObliqueMatrix(clipPlaneCameraSpace);
-				ctx.cmd.SetProjectionMatrix(ctx.cam.projectionMatrix);
-			}
-		}
-
-		// confine frustum to portal
+		// confine frustum to fromPortal
 		// https://github.com/MagnusCaligo/Outer_Portals/blob/master/Outer_Portals/PortalController.cs#L143-L157
 		{
-			var viewport = GetBoundingRectangle(ctx, portal);
+			var viewport = GetBoundingRectangle(ctx, fromPortal);
 			// viewport.x = Mathf.Round(viewport.x);
 			// viewport.y = Mathf.Round(viewport.y);
 			// viewport.width = Mathf.Clamp(Mathf.Round(viewport.width), 1, ctx.cam.pixelWidth);
@@ -255,6 +227,40 @@ public class CustomRenderPipeline : RenderPipeline
 			Matrix4x4 m3 = Matrix4x4.TRS(new Vector3(-r.x * 2 / r.width, -r.y * 2 / r.height, 0), Quaternion.identity, Vector3.one);
 			ctx.cam.projectionMatrix = m3 * m2 * m;
 			ctx.cmd.SetProjectionMatrix(ctx.cam.projectionMatrix);
+		}
+
+		// move camera to position to toPortal
+		{
+			var p2pMatrix = toPortal.transform.localToWorldMatrix * Matrix4x4.Rotate(Quaternion.Euler(0, 180, 0)) * fromPortal.transform.worldToLocalMatrix;
+
+			var newCamMatrix = p2pMatrix * ctx.cam.transform.localToWorldMatrix;
+			// actually move camera so culling happens. could edit cullingMatrix instead but whatever
+			ctx.cam.transform.SetPositionAndRotation(
+				newCamMatrix.GetPosition(),
+				newCamMatrix.rotation
+			);
+			ctx.cmd.SetViewMatrix(ctx.cam.worldToCameraMatrix);
+		}
+
+		// set near plane to toPortal
+		// https://github.com/SebLague/Portals/blob/master/Assets/Scripts/Core/Portal.cs#L250-L272
+		{
+			Transform clipPlane = toPortal.transform;
+			int dot = System.Math.Sign(Vector3.Dot(clipPlane.forward, toPortal.transform.position - ctx.cam.transform.position));
+
+			Vector3 camSpacePos = ctx.cam.worldToCameraMatrix.MultiplyPoint(clipPlane.position);
+			Vector3 camSpaceNormal = ctx.cam.worldToCameraMatrix.MultiplyVector(clipPlane.forward) * dot;
+			float camSpaceDst = -Vector3.Dot(camSpacePos, camSpaceNormal) + 0;
+
+			// Don't use oblique clip plane if very close to portal as it seems this can cause some visual artifacts
+			{
+				Vector4 clipPlaneCameraSpace = new Vector4(camSpaceNormal.x, camSpaceNormal.y, camSpaceNormal.z, camSpaceDst);
+
+				// Update projection based on new clip plane
+				// Calculate matrix with player cam so that player camera settings (fov, etc) are used
+				ctx.cam.projectionMatrix = ctx.cam.CalculateObliqueMatrix(clipPlaneCameraSpace);
+				ctx.cmd.SetProjectionMatrix(ctx.cam.projectionMatrix);
+			}
 		}
 
 		ctx.cmd.EndSample(sampleName);
