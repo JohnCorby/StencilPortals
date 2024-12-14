@@ -18,7 +18,9 @@ public class CustomRenderPipeline : RenderPipeline
 
 	protected override void Render(ScriptableRenderContext context, Camera[] cameras)
 	{
+#if UNITY_EDITOR
 		Portal.HACK_Validate();
+#endif
 
 		foreach (var camera in cameras)
 		{

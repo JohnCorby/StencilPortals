@@ -28,7 +28,7 @@ public class Portal : MonoBehaviour
 		Debug.Log($"inner portals = {string.Join(",", InnerPortals)}", this);
 	}
 
-
+#if UNITY_EDITOR
 	[MenuItem("Portals/DEBUG Rebuild")]
 	public static void DEBUG_Rebuild()
 	{
@@ -55,4 +55,5 @@ public class Portal : MonoBehaviour
 			}
 		}
 	}
+#endif
 }
