@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -35,12 +36,6 @@ public class CustomRenderPipeline : RenderPipeline
 		public Camera cam;
 	}
 
-	private struct CameraContext
-	{
-		public Matrix4x4 localToWorld, proj;
-		public Rect viewport;
-	}
-
 	private void RenderCamera(ScriptableRenderContext context, Camera camera)
 	{
 		// apparently we only need to do this once and not per portal
@@ -58,13 +53,7 @@ public class CustomRenderPipeline : RenderPipeline
 			ctx = context,
 			cam = camera,
 		};
-		var cc = new CameraContext
-		{
-			localToWorld = camera.transform.localToWorldMatrix,
-			proj = camera.projectionMatrix,
-			viewport = new Rect(0, 0, camera.pixelWidth, camera.pixelHeight)
-		};
-		RenderPortal(rc, null, camera.transform.localToWorldMatrix, 0);
+		RenderPortal(rc, null, 0, camera.transform.localToWorldMatrix, camera.projectionMatrix);
 
 		// cant render this per portal, it doesnt move for some reason
 		cmd.DrawRendererList(context.CreateGizmoRendererList(camera, GizmoSubset.PreImageEffects));
@@ -84,7 +73,7 @@ public class CustomRenderPipeline : RenderPipeline
 	/// <summary>
 	/// render a portal. null = render initial camera
 	/// </summary>
-	private void RenderPortal(RenderContext rc, Portal portal, Matrix4x4 originaLocalToWorld, int currentDepth)
+	private void RenderPortal(RenderContext rc, Portal portal, int currentDepth, Matrix4x4 originaLocalToWorld, Matrix4x4 originalProj)
 	{
 		rc.cam.TryGetCullingParameters(out var cullingParameters);
 		var cullingResults = rc.ctx.Cull(ref cullingParameters);
@@ -93,6 +82,11 @@ public class CustomRenderPipeline : RenderPipeline
 
 		if (currentDepth < _asset.MaxDepth)
 		{
+			// get camera state before changing it
+			var localToWorld = rc.cam.transform.localToWorldMatrix;
+			var proj = rc.cam.projectionMatrix;
+			var viewport = GetBoundingRectangle(rc, portal, originaLocalToWorld, originalProj);
+
 			// DFS traverse of portals
 			foreach (var innerPortal in GetInnerPortals(rc, portal))
 			{
@@ -102,12 +96,9 @@ public class CustomRenderPipeline : RenderPipeline
 
 				PunchHole(rc, innerPortal, ref currentDepth);
 
-				var localToWorld = rc.cam.transform.localToWorldMatrix;
-				var proj = rc.cam.projectionMatrix;
-				var viewport = GetBoundingRectangle(rc, portal, originaLocalToWorld);
-				SetupCamera(rc, innerPortal, originaLocalToWorld);
+				SetupCamera(rc, innerPortal, originaLocalToWorld, originalProj);
 
-				RenderPortal(rc, innerPortal, originaLocalToWorld, currentDepth);
+				RenderPortal(rc, innerPortal, currentDepth, originaLocalToWorld, originalProj);
 
 				UnsetupCamera(rc, localToWorld, proj, viewport);
 
@@ -179,12 +170,14 @@ public class CustomRenderPipeline : RenderPipeline
 		rc.cmd.EndSample(sampleName);
 	}
 
-	private Rect GetBoundingRectangle(RenderContext rc, Portal portal, Matrix4x4 originaLocalToWorld)
+	private Rect GetBoundingRectangle(RenderContext rc, Portal portal, Matrix4x4 originaLocalToWorld, Matrix4x4 originalProj)
 	{
 		if (!portal) return new Rect(0, 0, rc.cam.pixelWidth, rc.cam.pixelHeight);
 
 		var localToWorld = rc.cam.transform.localToWorldMatrix;
+		var proj = rc.cam.projectionMatrix;
 		rc.cam.transform.SetPositionAndRotation(originaLocalToWorld.GetPosition(), originaLocalToWorld.rotation);
+		rc.cam.projectionMatrix = originalProj;
 
 		// var screenPoint = ctx.cam.WorldToScreenPoint(portal.transform.position);
 		// return new Rect(screenPoint.x - 100, screenPoint.y - 100, 200, 200);
@@ -205,6 +198,7 @@ public class CustomRenderPipeline : RenderPipeline
 		var top = screenCorners.Select(x => x.y).Max();
 
 		rc.cam.transform.SetPositionAndRotation(localToWorld.GetPosition(), localToWorld.rotation);
+		rc.cam.projectionMatrix = proj;
 
 		return new Rect(left, bottom, right - left, top - bottom);
 	}
@@ -212,7 +206,7 @@ public class CustomRenderPipeline : RenderPipeline
 	/// <summary>
 	/// setup camera matrices and viewport
 	/// </summary>
-	private void SetupCamera(RenderContext rc, Portal portal, Matrix4x4 originaLocalToWorld)
+	private void SetupCamera(RenderContext rc, Portal portal, Matrix4x4 originaLocalToWorld, Matrix4x4 originalProj)
 	{
 		var fromPortal = portal;
 		var toPortal = portal.LinkedPortal;
@@ -223,7 +217,7 @@ public class CustomRenderPipeline : RenderPipeline
 		// confine frustum to fromPortal
 		// https://github.com/MagnusCaligo/Outer_Portals/blob/master/Outer_Portals/PortalController.cs#L143-L157
 		{
-			var viewport = GetBoundingRectangle(rc, fromPortal, originaLocalToWorld);
+			var viewport = GetBoundingRectangle(rc, fromPortal, originaLocalToWorld, originalProj);
 			// viewport.x = Mathf.Round(viewport.x);
 			// viewport.y = Mathf.Round(viewport.y);
 			// viewport.width = Mathf.Clamp(Mathf.Round(viewport.width), 1, ctx.cam.pixelWidth);
@@ -260,7 +254,7 @@ public class CustomRenderPipeline : RenderPipeline
 		// https://github.com/SebLague/Portals/blob/master/Assets/Scripts/Core/Portal.cs#L250-L272
 		{
 			Transform clipPlane = toPortal.transform;
-			int dot = System.Math.Sign(Vector3.Dot(clipPlane.forward, toPortal.transform.position - rc.cam.transform.position));
+			int dot = Math.Sign(Vector3.Dot(clipPlane.forward, toPortal.transform.position - rc.cam.transform.position));
 
 			Vector3 camSpacePos = rc.cam.worldToCameraMatrix.MultiplyPoint(clipPlane.position);
 			Vector3 camSpaceNormal = rc.cam.worldToCameraMatrix.MultiplyVector(clipPlane.forward) * dot;
