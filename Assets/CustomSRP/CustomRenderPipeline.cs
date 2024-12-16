@@ -123,7 +123,7 @@ public class CustomRenderPipeline : RenderPipeline
 		IEnumerable<Portal> portals = portal ? portal.InnerPortals : Portal.AllPortals;
 
 		// cull based on direction
-		portals = portals.Where(x => Vector3.Dot(x.transform.forward, rc.cam.transform.forward) > 0);
+		portals = portals.Where(x => Vector3.Dot(x.transform.forward, x.transform.position - rc.cam.transform.position) > 0);
 		// cull based on frustum
 		var planes = new Plane[6];
 		GeometryUtility.CalculateFrustumPlanes(rc.cam, planes);
