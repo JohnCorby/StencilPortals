@@ -42,7 +42,7 @@ public class CustomRenderPipeline : RenderPipeline
 		context.SetupCameraProperties(camera);
 
 		var cmd = CommandBufferPool.Get();
-		var sampleName = $"render camera {camera}";
+		var sampleName = $"render camera \"{camera.name}\"";
 		cmd.BeginSample(sampleName);
 
 		cmd.ClearRenderTarget(true, true, Color.clear);
@@ -91,7 +91,7 @@ public class CustomRenderPipeline : RenderPipeline
 			foreach (var innerPortal in GetInnerPortals(rc, portal))
 			{
 				// could be moved to start/end of RenderPortal, but the code reads nicer like this
-				var sampleName = $"render portal {innerPortal} depth {currentDepth}";
+				var sampleName = $"render portal \"{innerPortal.name}\" depth {currentDepth}";
 				rc.cmd.BeginSample(sampleName);
 
 				PunchHole(rc, innerPortal, ref currentDepth);
@@ -174,6 +174,7 @@ public class CustomRenderPipeline : RenderPipeline
 	{
 		if (!portal) return new Rect(0, 0, rc.cam.pixelWidth, rc.cam.pixelHeight);
 
+		// we want to be
 		var localToWorld = rc.cam.transform.localToWorldMatrix;
 		var proj = rc.cam.projectionMatrix;
 		rc.cam.transform.SetPositionAndRotation(originaLocalToWorld.GetPosition(), originaLocalToWorld.rotation);
@@ -211,7 +212,7 @@ public class CustomRenderPipeline : RenderPipeline
 		var fromPortal = portal;
 		var toPortal = portal.LinkedPortal;
 
-		var sampleName = $"setup camera from {fromPortal} to {toPortal}";
+		var sampleName = $"setup camera from \"{fromPortal.name}\" to \"{toPortal.name}\"";
 		rc.cmd.BeginSample(sampleName);
 
 		// confine frustum to fromPortal
