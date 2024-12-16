@@ -28,11 +28,17 @@ public class CustomRenderPipeline : RenderPipeline
 		}
 	}
 
-	public struct RenderContext
+	private struct RenderContext
 	{
 		public CommandBuffer cmd;
 		public ScriptableRenderContext ctx;
 		public Camera cam;
+	}
+
+	private struct CameraContext
+	{
+		public Matrix4x4 localToWorld, proj;
+		public Rect viewport;
 	}
 
 	private void RenderCamera(ScriptableRenderContext context, Camera camera)
@@ -46,13 +52,19 @@ public class CustomRenderPipeline : RenderPipeline
 
 		cmd.ClearRenderTarget(true, true, Color.clear);
 
-		var ctx = new RenderContext
+		var rc = new RenderContext
 		{
 			cmd = cmd,
 			ctx = context,
 			cam = camera,
 		};
-		RenderPortal(ctx, null);
+		var cc = new CameraContext
+		{
+			localToWorld = camera.transform.localToWorldMatrix,
+			proj = camera.projectionMatrix,
+			viewport = new Rect(0, 0, camera.pixelWidth, camera.pixelHeight)
+		};
+		RenderPortal(rc, null);
 
 		// cant render this per portal, it doesnt move for some reason
 		cmd.DrawRendererList(context.CreateGizmoRendererList(camera, GizmoSubset.PreImageEffects));
@@ -72,54 +84,54 @@ public class CustomRenderPipeline : RenderPipeline
 	/// <summary>
 	/// render a portal. null = render initial camera
 	/// </summary>
-	private void RenderPortal(RenderContext ctx, Portal portal, int currentDepth = 0)
+	private void RenderPortal(RenderContext rc, Portal portal, int currentDepth = 0)
 	{
-		ctx.cam.TryGetCullingParameters(out var cullingParameters);
-		var cullingResults = ctx.ctx.Cull(ref cullingParameters);
+		rc.cam.TryGetCullingParameters(out var cullingParameters);
+		var cullingResults = rc.ctx.Cull(ref cullingParameters);
 
-		DrawGeometry(ctx, cullingResults, true, currentDepth);
+		DrawGeometry(rc, cullingResults, true, currentDepth);
 
 		if (currentDepth < _asset.MaxDepth)
 		{
 			// DFS traverse of portals
-			foreach (var innerPortal in GetInnerPortals(ctx, portal))
+			foreach (var innerPortal in GetInnerPortals(rc, portal))
 			{
 				// could be moved to start/end of RenderPortal, but the code reads nicer like this
 				var sampleName = $"render portal {innerPortal} depth {currentDepth}";
-				ctx.cmd.BeginSample(sampleName);
+				rc.cmd.BeginSample(sampleName);
 
-				PunchHole(ctx, innerPortal, ref currentDepth);
+				PunchHole(rc, innerPortal, ref currentDepth);
 
-				var localToWorld = ctx.cam.transform.localToWorldMatrix;
-				var proj = ctx.cam.projectionMatrix;
-				var viewport = GetBoundingRectangle(ctx, portal);
-				SetupCamera(ctx, innerPortal);
+				var localToWorld = rc.cam.transform.localToWorldMatrix;
+				var proj = rc.cam.projectionMatrix;
+				var viewport = GetBoundingRectangle(rc, portal);
+				SetupCamera(rc, innerPortal);
 
-				RenderPortal(ctx, innerPortal, currentDepth);
+				RenderPortal(rc, innerPortal, currentDepth);
 
-				UnsetupCamera(ctx, localToWorld, proj, viewport);
+				UnsetupCamera(rc, localToWorld, proj, viewport);
 
-				UnpunchHole(ctx, innerPortal, ref currentDepth);
+				UnpunchHole(rc, innerPortal, ref currentDepth);
 
-				ctx.cmd.EndSample(sampleName);
+				rc.cmd.EndSample(sampleName);
 			}
 		}
 
-		DrawGeometry(ctx, cullingResults, false, currentDepth);
+		DrawGeometry(rc, cullingResults, false, currentDepth);
 
 		// cant check stencil without making new skybox material
 		// its okay because the correct skybox gets drawn over everything last
 		// BUG: gets shifted around by viewport projection
-		ctx.cmd.DrawRendererList(ctx.ctx.CreateSkyboxRendererList(ctx.cam));
+		rc.cmd.DrawRendererList(rc.ctx.CreateSkyboxRendererList(rc.cam));
 	}
 
-	private IEnumerable<Portal> GetInnerPortals(RenderContext ctx, Portal portal)
+	private IEnumerable<Portal> GetInnerPortals(RenderContext rc, Portal portal)
 	{
 		IEnumerable<Portal> portals = portal ? portal.InnerPortals : Portal.AllPortals;
 
 		// cull based on frustum
 		var planes = new Plane[6];
-		GeometryUtility.CalculateFrustumPlanes(ctx.cam, planes);
+		GeometryUtility.CalculateFrustumPlanes(rc.cam, planes);
 		portals = portals.Where(x => GeometryUtility.TestPlanesAABB(planes, x.Renderer.bounds));
 
 		return portals;
@@ -129,47 +141,47 @@ public class CustomRenderPipeline : RenderPipeline
 	/// stencil read currentDepth, write currentDepth + 1
 	/// writes depth = far
 	/// </summary>
-	private void PunchHole(RenderContext ctx, Portal portal, ref int currentDepth)
+	private void PunchHole(RenderContext rc, Portal portal, ref int currentDepth)
 	{
 		var sampleName = $"punch hole";
-		ctx.cmd.BeginSample(sampleName);
+		rc.cmd.BeginSample(sampleName);
 
 		// read stencil and incr
 		// reads from depth here so things in front stay in front
-		ctx.cmd.SetGlobalInt("_StencilRef", currentDepth);
-		ctx.cmd.DrawRenderer(portal.Renderer, _asset.PortalPassesMaterial, 0, 0);
+		rc.cmd.SetGlobalInt("_StencilRef", currentDepth);
+		rc.cmd.DrawRenderer(portal.Renderer, _asset.PortalPassesMaterial, 0, 0);
 		currentDepth++;
 
 		// read stencil and ovewrite depth
 		// dont care about depth cuz we check stencil
-		ctx.cmd.SetGlobalInt("_StencilRef", currentDepth);
-		ctx.cmd.DrawRenderer(portal.Renderer, _asset.PortalPassesMaterial, 0, 1);
+		rc.cmd.SetGlobalInt("_StencilRef", currentDepth);
+		rc.cmd.DrawRenderer(portal.Renderer, _asset.PortalPassesMaterial, 0, 1);
 
-		ctx.cmd.EndSample(sampleName);
+		rc.cmd.EndSample(sampleName);
 	}
 
 	/// <summary>
 	/// stencil read currentDepth, write currentDepth - 1
 	/// writes depth = portal quad depth
 	/// </summary>
-	private void UnpunchHole(RenderContext ctx, Portal portal, ref int currentDepth)
+	private void UnpunchHole(RenderContext rc, Portal portal, ref int currentDepth)
 	{
 		var sampleName = $"unpunch hole";
-		ctx.cmd.BeginSample(sampleName);
+		rc.cmd.BeginSample(sampleName);
 
 		// read stencil and decr
 		// write quad depth
 		// dont care about depth cuz we check stencil
-		ctx.cmd.SetGlobalInt("_StencilRef", currentDepth);
-		ctx.cmd.DrawRenderer(portal.Renderer, _asset.PortalPassesMaterial, 0, 2);
+		rc.cmd.SetGlobalInt("_StencilRef", currentDepth);
+		rc.cmd.DrawRenderer(portal.Renderer, _asset.PortalPassesMaterial, 0, 2);
 		currentDepth--;
 
-		ctx.cmd.EndSample(sampleName);
+		rc.cmd.EndSample(sampleName);
 	}
 
-	public Rect GetBoundingRectangle(RenderContext ctx, Portal portal)
+	private Rect GetBoundingRectangle(RenderContext rc, Portal portal)
 	{
-		if (!portal) return new Rect(0, 0, ctx.cam.pixelWidth, ctx.cam.pixelHeight);
+		if (!portal) return new Rect(0, 0, rc.cam.pixelWidth, rc.cam.pixelHeight);
 
 		// var screenPoint = ctx.cam.WorldToScreenPoint(portal.transform.position);
 		// return new Rect(screenPoint.x - 100, screenPoint.y - 100, 200, 200);
@@ -182,7 +194,7 @@ public class CustomRenderPipeline : RenderPipeline
 			portal.transform.position - portal.transform.up + portal.transform.right,
 			portal.transform.position + portal.transform.up - portal.transform.right,
 		};
-		var screenCorners = worldCorners.Select(x => ctx.cam.WorldToScreenPoint(x));
+		var screenCorners = worldCorners.Select(x => rc.cam.WorldToScreenPoint(x));
 
 		var left = screenCorners.Select(x => x.x).Min();
 		var right = screenCorners.Select(x => x.x).Max();
@@ -195,18 +207,18 @@ public class CustomRenderPipeline : RenderPipeline
 	/// <summary>
 	/// setup camera matrices and viewport
 	/// </summary>
-	private void SetupCamera(RenderContext ctx, Portal portal)
+	private void SetupCamera(RenderContext rc, Portal portal)
 	{
 		var fromPortal = portal;
 		var toPortal = portal.LinkedPortal;
 
 		var sampleName = $"setup camera from {fromPortal} to {toPortal}";
-		ctx.cmd.BeginSample(sampleName);
+		rc.cmd.BeginSample(sampleName);
 
 		// confine frustum to fromPortal
 		// https://github.com/MagnusCaligo/Outer_Portals/blob/master/Outer_Portals/PortalController.cs#L143-L157
 		{
-			var viewport = GetBoundingRectangle(ctx, fromPortal);
+			var viewport = GetBoundingRectangle(rc, fromPortal);
 			// viewport.x = Mathf.Round(viewport.x);
 			// viewport.y = Mathf.Round(viewport.y);
 			// viewport.width = Mathf.Clamp(Mathf.Round(viewport.width), 1, ctx.cam.pixelWidth);
@@ -214,42 +226,42 @@ public class CustomRenderPipeline : RenderPipeline
 
 			//Matrix4x4 m = Locator.GetPlayerCamera().mainCamera.projectionMatrix;
 			// ctx.cam.ResetProjectionMatrix();
-			Matrix4x4 m = ctx.cam.projectionMatrix;
+			Matrix4x4 m = rc.cam.projectionMatrix;
 			// if (cam.rect.size != r.size) NHLogger.Log($"changing {this} rect from {cam.rect} to {r}");
-			ctx.cmd.SetViewport(viewport);
+			rc.cmd.SetViewport(viewport);
 			// cam.rect = r;
 			// cam.aspect = playerCamera.aspect; // does this need to be set here?
 
 			// this expects 0-1, so divide
-			var r = new Rect(viewport.x / ctx.cam.pixelWidth, viewport.y / ctx.cam.pixelHeight, viewport.width / ctx.cam.pixelWidth, viewport.height / ctx.cam.pixelHeight);
+			var r = new Rect(viewport.x / rc.cam.pixelWidth, viewport.y / rc.cam.pixelHeight, viewport.width / rc.cam.pixelWidth, viewport.height / rc.cam.pixelHeight);
 			// reverse effects of viewport
 			Matrix4x4 m2 = Matrix4x4.TRS(new Vector3((1 / r.width - 1), (1 / r.height - 1), 0), Quaternion.identity, new Vector3(1 / r.width, 1 / r.height, 1));
 			Matrix4x4 m3 = Matrix4x4.TRS(new Vector3(-r.x * 2 / r.width, -r.y * 2 / r.height, 0), Quaternion.identity, Vector3.one);
-			ctx.cam.projectionMatrix = m3 * m2 * m;
-			ctx.cmd.SetProjectionMatrix(ctx.cam.projectionMatrix);
+			rc.cam.projectionMatrix = m3 * m2 * m;
+			rc.cmd.SetProjectionMatrix(rc.cam.projectionMatrix);
 		}
 
 		// move camera to position to toPortal
 		{
 			var p2pMatrix = toPortal.transform.localToWorldMatrix * Matrix4x4.Rotate(Quaternion.Euler(0, 180, 0)) * fromPortal.transform.worldToLocalMatrix;
 
-			var newCamMatrix = p2pMatrix * ctx.cam.transform.localToWorldMatrix;
+			var newCamMatrix = p2pMatrix * rc.cam.transform.localToWorldMatrix;
 			// actually move camera so culling happens. could edit cullingMatrix instead but whatever
-			ctx.cam.transform.SetPositionAndRotation(
+			rc.cam.transform.SetPositionAndRotation(
 				newCamMatrix.GetPosition(),
 				newCamMatrix.rotation
 			);
-			ctx.cmd.SetViewMatrix(ctx.cam.worldToCameraMatrix);
+			rc.cmd.SetViewMatrix(rc.cam.worldToCameraMatrix);
 		}
 
 		// set near plane to toPortal
 		// https://github.com/SebLague/Portals/blob/master/Assets/Scripts/Core/Portal.cs#L250-L272
 		{
 			Transform clipPlane = toPortal.transform;
-			int dot = System.Math.Sign(Vector3.Dot(clipPlane.forward, toPortal.transform.position - ctx.cam.transform.position));
+			int dot = System.Math.Sign(Vector3.Dot(clipPlane.forward, toPortal.transform.position - rc.cam.transform.position));
 
-			Vector3 camSpacePos = ctx.cam.worldToCameraMatrix.MultiplyPoint(clipPlane.position);
-			Vector3 camSpaceNormal = ctx.cam.worldToCameraMatrix.MultiplyVector(clipPlane.forward) * dot;
+			Vector3 camSpacePos = rc.cam.worldToCameraMatrix.MultiplyPoint(clipPlane.position);
+			Vector3 camSpaceNormal = rc.cam.worldToCameraMatrix.MultiplyVector(clipPlane.forward) * dot;
 			float camSpaceDst = -Vector3.Dot(camSpacePos, camSpaceNormal) + 0;
 
 			// Don't use oblique clip plane if very close to portal as it seems this can cause some visual artifacts
@@ -258,41 +270,41 @@ public class CustomRenderPipeline : RenderPipeline
 
 				// Update projection based on new clip plane
 				// Calculate matrix with player cam so that player camera settings (fov, etc) are used
-				ctx.cam.projectionMatrix = ctx.cam.CalculateObliqueMatrix(clipPlaneCameraSpace);
-				ctx.cmd.SetProjectionMatrix(ctx.cam.projectionMatrix);
+				rc.cam.projectionMatrix = rc.cam.CalculateObliqueMatrix(clipPlaneCameraSpace);
+				rc.cmd.SetProjectionMatrix(rc.cam.projectionMatrix);
 			}
 		}
 
-		ctx.cmd.EndSample(sampleName);
+		rc.cmd.EndSample(sampleName);
 	}
 
 	/// <summary>
 	/// undo matrices and viewport
 	/// </summary>
-	private void UnsetupCamera(RenderContext ctx, Matrix4x4 localToWorld, Matrix4x4 proj, Rect viewport)
+	private void UnsetupCamera(RenderContext rc, Matrix4x4 localToWorld, Matrix4x4 proj, Rect viewport)
 	{
 		var sampleName = $"unsetup camera";
-		ctx.cmd.BeginSample(sampleName);
+		rc.cmd.BeginSample(sampleName);
 
-		ctx.cam.transform.SetPositionAndRotation(
+		rc.cam.transform.SetPositionAndRotation(
 			localToWorld.GetPosition(),
 			localToWorld.rotation
 		);
-		ctx.cmd.SetViewMatrix(ctx.cam.worldToCameraMatrix);
-		ctx.cam.projectionMatrix = proj;
-		ctx.cmd.SetProjectionMatrix(ctx.cam.projectionMatrix);
-		ctx.cmd.SetViewport(viewport);
+		rc.cmd.SetViewMatrix(rc.cam.worldToCameraMatrix);
+		rc.cam.projectionMatrix = proj;
+		rc.cmd.SetProjectionMatrix(rc.cam.projectionMatrix);
+		rc.cmd.SetViewport(viewport);
 
-		ctx.cmd.EndSample(sampleName);
+		rc.cmd.EndSample(sampleName);
 	}
 
 
-	private void DrawGeometry(RenderContext ctx, CullingResults cullingResults, bool opaque, int currentDepth)
+	private void DrawGeometry(RenderContext rc, CullingResults cullingResults, bool opaque, int currentDepth)
 	{
 		var sampleName = $"draw geometry {(opaque ? "opaque" : "transparent")}";
-		ctx.cmd.BeginSample(sampleName);
+		rc.cmd.BeginSample(sampleName);
 
-		var rendererListDesc = new RendererListDesc(new ShaderTagId("CustomLit"), cullingResults, ctx.cam)
+		var rendererListDesc = new RendererListDesc(new ShaderTagId("CustomLit"), cullingResults, rc.cam)
 		{
 			sortingCriteria = opaque ? SortingCriteria.CommonOpaque : SortingCriteria.CommonTransparent,
 			renderQueueRange = opaque ? RenderQueueRange.opaque : RenderQueueRange.transparent,
@@ -302,8 +314,8 @@ public class CustomRenderPipeline : RenderPipeline
 				stencilReference = currentDepth
 			}
 		};
-		ctx.cmd.DrawRendererList(ctx.ctx.CreateRendererList(rendererListDesc));
+		rc.cmd.DrawRendererList(rc.ctx.CreateRendererList(rendererListDesc));
 
-		ctx.cmd.EndSample(sampleName);
+		rc.cmd.EndSample(sampleName);
 	}
 }
