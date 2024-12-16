@@ -172,6 +172,10 @@ public class CustomRenderPipeline : RenderPipeline
 		rc.cmd.EndSample(sampleName);
 	}
 
+	/// <summary>
+	/// get viewport of portal with current view and original proj
+	/// </summary>
+	/// <returns></returns>
 	private Rect GetBoundingRectangle(RenderContext rc, Portal portal, Matrix4x4 originaLocalToWorld, Matrix4x4 originalProj)
 	{
 		if (!portal) return new Rect(0, 0, rc.cam.pixelWidth, rc.cam.pixelHeight);
@@ -189,10 +193,10 @@ public class CustomRenderPipeline : RenderPipeline
 		// bad
 		var worldCorners = new[]
 		{
-			portal.transform.position + portal.transform.up + portal.transform.right,
-			portal.transform.position - portal.transform.up - portal.transform.right,
-			portal.transform.position - portal.transform.up + portal.transform.right,
-			portal.transform.position + portal.transform.up - portal.transform.right,
+			portal.transform.position + (portal.transform.up + portal.transform.right) * 1,
+			portal.transform.position + (-portal.transform.up - portal.transform.right) * 1,
+			portal.transform.position + (-portal.transform.up + portal.transform.right) * 1,
+			portal.transform.position + (portal.transform.up - portal.transform.right) * 1,
 		};
 		var screenCorners = worldCorners.Select(x => rc.cam.WorldToScreenPoint(x));
 
@@ -229,7 +233,7 @@ public class CustomRenderPipeline : RenderPipeline
 
 			//Matrix4x4 m = Locator.GetPlayerCamera().mainCamera.projectionMatrix;
 			// ctx.cam.ResetProjectionMatrix();
-			Matrix4x4 m = rc.cam.projectionMatrix;
+			Matrix4x4 m = originalProj;
 			// if (cam.rect.size != r.size) NHLogger.Log($"changing {this} rect from {cam.rect} to {r}");
 			rc.cmd.SetViewport(rc.viewport);
 			// cam.rect = r;
