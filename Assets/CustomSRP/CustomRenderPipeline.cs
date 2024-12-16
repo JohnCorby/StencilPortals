@@ -191,6 +191,8 @@ public class CustomRenderPipeline : RenderPipeline
 		// return new Rect(screenPoint.x - 100, screenPoint.y - 100, 200, 200);
 
 		// bad
+		// TODO https://discussions.unity.com/t/draw-bounding-rectangle-screen-space-around-a-game-object-with-a-renderer-world-space/821680/4
+		// BUG: breaks when intersecting sometimes lol
 		var worldCorners = new[]
 		{
 			portal.transform.position + (portal.transform.up + portal.transform.right) * 1.5f,
@@ -224,6 +226,7 @@ public class CustomRenderPipeline : RenderPipeline
 
 		// confine frustum to fromPortal
 		// https://github.com/MagnusCaligo/Outer_Portals/blob/master/Outer_Portals/PortalController.cs#L143-L157
+		// TODO use cleaner https://discussions.unity.com/t/scissor-rectangle/404230
 		{
 			rc.viewport = GetBoundingRectangle(rc, fromPortal, originaLocalToWorld, originalProj);
 			// viewport.x = Mathf.Round(viewport.x);
