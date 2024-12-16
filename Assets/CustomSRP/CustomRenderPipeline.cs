@@ -64,7 +64,7 @@ public class CustomRenderPipeline : RenderPipeline
 			proj = camera.projectionMatrix,
 			viewport = new Rect(0, 0, camera.pixelWidth, camera.pixelHeight)
 		};
-		RenderPortal(rc, null);
+		RenderPortal(rc, null, camera.transform.localToWorldMatrix, 0);
 
 		// cant render this per portal, it doesnt move for some reason
 		cmd.DrawRendererList(context.CreateGizmoRendererList(camera, GizmoSubset.PreImageEffects));
@@ -84,7 +84,7 @@ public class CustomRenderPipeline : RenderPipeline
 	/// <summary>
 	/// render a portal. null = render initial camera
 	/// </summary>
-	private void RenderPortal(RenderContext rc, Portal portal, int currentDepth = 0)
+	private void RenderPortal(RenderContext rc, Portal portal, Matrix4x4 originaLocalToWorld, int currentDepth)
 	{
 		rc.cam.TryGetCullingParameters(out var cullingParameters);
 		var cullingResults = rc.ctx.Cull(ref cullingParameters);
@@ -104,10 +104,10 @@ public class CustomRenderPipeline : RenderPipeline
 
 				var localToWorld = rc.cam.transform.localToWorldMatrix;
 				var proj = rc.cam.projectionMatrix;
-				var viewport = GetBoundingRectangle(rc, portal);
-				SetupCamera(rc, innerPortal);
+				var viewport = GetBoundingRectangle(rc, portal, originaLocalToWorld);
+				SetupCamera(rc, innerPortal, originaLocalToWorld);
 
-				RenderPortal(rc, innerPortal, currentDepth);
+				RenderPortal(rc, innerPortal, originaLocalToWorld, currentDepth);
 
 				UnsetupCamera(rc, localToWorld, proj, viewport);
 
@@ -179,9 +179,12 @@ public class CustomRenderPipeline : RenderPipeline
 		rc.cmd.EndSample(sampleName);
 	}
 
-	private Rect GetBoundingRectangle(RenderContext rc, Portal portal)
+	private Rect GetBoundingRectangle(RenderContext rc, Portal portal, Matrix4x4 originaLocalToWorld)
 	{
 		if (!portal) return new Rect(0, 0, rc.cam.pixelWidth, rc.cam.pixelHeight);
+
+		var localToWorld = rc.cam.transform.localToWorldMatrix;
+		rc.cam.transform.SetPositionAndRotation(originaLocalToWorld.GetPosition(), originaLocalToWorld.rotation);
 
 		// var screenPoint = ctx.cam.WorldToScreenPoint(portal.transform.position);
 		// return new Rect(screenPoint.x - 100, screenPoint.y - 100, 200, 200);
@@ -201,13 +204,15 @@ public class CustomRenderPipeline : RenderPipeline
 		var bottom = screenCorners.Select(x => x.y).Min();
 		var top = screenCorners.Select(x => x.y).Max();
 
+		rc.cam.transform.SetPositionAndRotation(localToWorld.GetPosition(), localToWorld.rotation);
+
 		return new Rect(left, bottom, right - left, top - bottom);
 	}
 
 	/// <summary>
 	/// setup camera matrices and viewport
 	/// </summary>
-	private void SetupCamera(RenderContext rc, Portal portal)
+	private void SetupCamera(RenderContext rc, Portal portal, Matrix4x4 originaLocalToWorld)
 	{
 		var fromPortal = portal;
 		var toPortal = portal.LinkedPortal;
@@ -218,7 +223,7 @@ public class CustomRenderPipeline : RenderPipeline
 		// confine frustum to fromPortal
 		// https://github.com/MagnusCaligo/Outer_Portals/blob/master/Outer_Portals/PortalController.cs#L143-L157
 		{
-			var viewport = GetBoundingRectangle(rc, fromPortal);
+			var viewport = GetBoundingRectangle(rc, fromPortal, originaLocalToWorld);
 			// viewport.x = Mathf.Round(viewport.x);
 			// viewport.y = Mathf.Round(viewport.y);
 			// viewport.width = Mathf.Clamp(Mathf.Round(viewport.width), 1, ctx.cam.pixelWidth);
@@ -247,10 +252,7 @@ public class CustomRenderPipeline : RenderPipeline
 
 			var newCamMatrix = p2pMatrix * rc.cam.transform.localToWorldMatrix;
 			// actually move camera so culling happens. could edit cullingMatrix instead but whatever
-			rc.cam.transform.SetPositionAndRotation(
-				newCamMatrix.GetPosition(),
-				newCamMatrix.rotation
-			);
+			rc.cam.transform.SetPositionAndRotation(newCamMatrix.GetPosition(), newCamMatrix.rotation);
 			rc.cmd.SetViewMatrix(rc.cam.worldToCameraMatrix);
 		}
 
@@ -286,10 +288,7 @@ public class CustomRenderPipeline : RenderPipeline
 		var sampleName = $"unsetup camera";
 		rc.cmd.BeginSample(sampleName);
 
-		rc.cam.transform.SetPositionAndRotation(
-			localToWorld.GetPosition(),
-			localToWorld.rotation
-		);
+		rc.cam.transform.SetPositionAndRotation(localToWorld.GetPosition(), localToWorld.rotation);
 		rc.cmd.SetViewMatrix(rc.cam.worldToCameraMatrix);
 		rc.cam.projectionMatrix = proj;
 		rc.cmd.SetProjectionMatrix(rc.cam.projectionMatrix);
