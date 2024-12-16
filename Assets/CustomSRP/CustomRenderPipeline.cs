@@ -29,7 +29,7 @@ public class CustomRenderPipeline : RenderPipeline
 		}
 	}
 
-	private struct RenderContext
+	private class RenderContext // we edit stuff here. could use ref but idc
 	{
 		public CommandBuffer cmd;
 		public ScriptableRenderContext ctx;
