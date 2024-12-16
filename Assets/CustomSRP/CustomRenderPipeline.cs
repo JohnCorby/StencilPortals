@@ -29,7 +29,7 @@ public class CustomRenderPipeline : RenderPipeline
 		}
 	}
 
-	private class RenderContext // we edit stuff here. could use ref but idc
+	private struct RenderContext
 	{
 		public CommandBuffer cmd;
 		public ScriptableRenderContext ctx;
@@ -98,11 +98,11 @@ public class CustomRenderPipeline : RenderPipeline
 
 				PunchHole(rc, innerPortal, ref currentDepth);
 
-				SetupCamera(rc, innerPortal, originaLocalToWorld, originalProj);
+				SetupCamera(ref rc, innerPortal, originaLocalToWorld, originalProj);
 
 				RenderPortal(rc, innerPortal, currentDepth, originaLocalToWorld, originalProj);
 
-				UnsetupCamera(rc, localToWorld, proj, viewport);
+				UnsetupCamera(ref rc, localToWorld, proj, viewport);
 
 				UnpunchHole(rc, innerPortal, ref currentDepth);
 
@@ -214,7 +214,7 @@ public class CustomRenderPipeline : RenderPipeline
 	/// <summary>
 	/// setup camera matrices and viewport
 	/// </summary>
-	private void SetupCamera(RenderContext rc, Portal portal, Matrix4x4 originaLocalToWorld, Matrix4x4 originalProj)
+	private void SetupCamera(ref RenderContext rc, Portal portal, Matrix4x4 originaLocalToWorld, Matrix4x4 originalProj)
 	{
 		var fromPortal = portal;
 		var toPortal = portal.LinkedPortal;
@@ -285,7 +285,7 @@ public class CustomRenderPipeline : RenderPipeline
 	/// <summary>
 	/// undo matrices and viewport
 	/// </summary>
-	private void UnsetupCamera(RenderContext rc, Matrix4x4 localToWorld, Matrix4x4 proj, Rect viewport)
+	private void UnsetupCamera(ref RenderContext rc, Matrix4x4 localToWorld, Matrix4x4 proj, Rect viewport)
 	{
 		var sampleName = $"unsetup camera";
 		rc.cmd.BeginSample(sampleName);
