@@ -122,6 +122,8 @@ public class CustomRenderPipeline : RenderPipeline
 	{
 		IEnumerable<Portal> portals = portal ? portal.InnerPortals : Portal.AllPortals;
 
+		// cull based on direction
+		portals = portals.Where(x => Vector3.Dot(x.transform.forward, rc.cam.transform.forward) > 0);
 		// cull based on frustum
 		var planes = new Plane[6];
 		GeometryUtility.CalculateFrustumPlanes(rc.cam, planes);
@@ -178,8 +180,6 @@ public class CustomRenderPipeline : RenderPipeline
 	/// <returns></returns>
 	private Rect GetBoundingRectangle(RenderContext rc, Portal portal, Matrix4x4 originaLocalToWorld, Matrix4x4 originalProj)
 	{
-		if (!portal) return new Rect(0, 0, rc.cam.pixelWidth, rc.cam.pixelHeight);
-
 		// we want to keep camera relative to whatever portal we're looking through
 		// but we also want the original proj
 		var localToWorld = rc.cam.transform.localToWorldMatrix;
@@ -193,10 +193,10 @@ public class CustomRenderPipeline : RenderPipeline
 		// bad
 		var worldCorners = new[]
 		{
-			portal.transform.position + (portal.transform.up + portal.transform.right) * 1,
-			portal.transform.position + (-portal.transform.up - portal.transform.right) * 1,
-			portal.transform.position + (-portal.transform.up + portal.transform.right) * 1,
-			portal.transform.position + (portal.transform.up - portal.transform.right) * 1,
+			portal.transform.position + (portal.transform.up + portal.transform.right) * 1.5f,
+			portal.transform.position + (-portal.transform.up - portal.transform.right) * 1.5f,
+			portal.transform.position + (-portal.transform.up + portal.transform.right) * 1.5f,
+			portal.transform.position + (portal.transform.up - portal.transform.right) * 1.5f,
 		};
 		var screenCorners = worldCorners.Select(x => rc.cam.WorldToScreenPoint(x));
 
@@ -239,6 +239,7 @@ public class CustomRenderPipeline : RenderPipeline
 			// cam.rect = r;
 			// cam.aspect = playerCamera.aspect; // does this need to be set here?
 
+			// make matrix to go from original proj to new viewport proj
 			// this expects 0-1, so divide
 			var r = new Rect(rc.viewport.x / rc.cam.pixelWidth, rc.viewport.y / rc.cam.pixelHeight, rc.viewport.width / rc.cam.pixelWidth, rc.viewport.height / rc.cam.pixelHeight);
 			// reverse effects of viewport

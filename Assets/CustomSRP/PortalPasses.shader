@@ -7,6 +7,7 @@
         {
             "LightMode" = "PortalPasses"
         }
+//        Cull Off
 
         // punch hole pass
         Pass
