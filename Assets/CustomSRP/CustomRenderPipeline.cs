@@ -34,6 +34,7 @@ public class CustomRenderPipeline : RenderPipeline
 		public CommandBuffer cmd;
 		public ScriptableRenderContext ctx;
 		public Camera cam;
+		public Rect viewport;
 	}
 
 	private void RenderCamera(ScriptableRenderContext context, Camera camera)
@@ -52,6 +53,7 @@ public class CustomRenderPipeline : RenderPipeline
 			cmd = cmd,
 			ctx = context,
 			cam = camera,
+			viewport = new Rect(0, 0, camera.pixelWidth, camera.pixelHeight)
 		};
 		RenderPortal(rc, null, 0, camera.transform.localToWorldMatrix, camera.projectionMatrix);
 
@@ -85,7 +87,7 @@ public class CustomRenderPipeline : RenderPipeline
 			// get camera state before changing it
 			var localToWorld = rc.cam.transform.localToWorldMatrix;
 			var proj = rc.cam.projectionMatrix;
-			var viewport = GetBoundingRectangle(rc, portal, originaLocalToWorld, originalProj);
+			var viewport = rc.viewport;
 
 			// DFS traverse of portals
 			foreach (var innerPortal in GetInnerPortals(rc, portal))
@@ -174,10 +176,11 @@ public class CustomRenderPipeline : RenderPipeline
 	{
 		if (!portal) return new Rect(0, 0, rc.cam.pixelWidth, rc.cam.pixelHeight);
 
-		// we want to be
+		// we want to keep camera relative to whatever portal we're looking through
+		// but we also want the original proj
 		var localToWorld = rc.cam.transform.localToWorldMatrix;
 		var proj = rc.cam.projectionMatrix;
-		rc.cam.transform.SetPositionAndRotation(originaLocalToWorld.GetPosition(), originaLocalToWorld.rotation);
+		// rc.cam.transform.SetPositionAndRotation(originaLocalToWorld.GetPosition(), originaLocalToWorld.rotation);
 		rc.cam.projectionMatrix = originalProj;
 
 		// var screenPoint = ctx.cam.WorldToScreenPoint(portal.transform.position);
@@ -218,7 +221,7 @@ public class CustomRenderPipeline : RenderPipeline
 		// confine frustum to fromPortal
 		// https://github.com/MagnusCaligo/Outer_Portals/blob/master/Outer_Portals/PortalController.cs#L143-L157
 		{
-			var viewport = GetBoundingRectangle(rc, fromPortal, originaLocalToWorld, originalProj);
+			rc.viewport = GetBoundingRectangle(rc, fromPortal, originaLocalToWorld, originalProj);
 			// viewport.x = Mathf.Round(viewport.x);
 			// viewport.y = Mathf.Round(viewport.y);
 			// viewport.width = Mathf.Clamp(Mathf.Round(viewport.width), 1, ctx.cam.pixelWidth);
@@ -228,12 +231,12 @@ public class CustomRenderPipeline : RenderPipeline
 			// ctx.cam.ResetProjectionMatrix();
 			Matrix4x4 m = rc.cam.projectionMatrix;
 			// if (cam.rect.size != r.size) NHLogger.Log($"changing {this} rect from {cam.rect} to {r}");
-			rc.cmd.SetViewport(viewport);
+			rc.cmd.SetViewport(rc.viewport);
 			// cam.rect = r;
 			// cam.aspect = playerCamera.aspect; // does this need to be set here?
 
 			// this expects 0-1, so divide
-			var r = new Rect(viewport.x / rc.cam.pixelWidth, viewport.y / rc.cam.pixelHeight, viewport.width / rc.cam.pixelWidth, viewport.height / rc.cam.pixelHeight);
+			var r = new Rect(rc.viewport.x / rc.cam.pixelWidth, rc.viewport.y / rc.cam.pixelHeight, rc.viewport.width / rc.cam.pixelWidth, rc.viewport.height / rc.cam.pixelHeight);
 			// reverse effects of viewport
 			Matrix4x4 m2 = Matrix4x4.TRS(new Vector3((1 / r.width - 1), (1 / r.height - 1), 0), Quaternion.identity, new Vector3(1 / r.width, 1 / r.height, 1));
 			Matrix4x4 m3 = Matrix4x4.TRS(new Vector3(-r.x * 2 / r.width, -r.y * 2 / r.height, 0), Quaternion.identity, Vector3.one);
@@ -287,7 +290,8 @@ public class CustomRenderPipeline : RenderPipeline
 		rc.cmd.SetViewMatrix(rc.cam.worldToCameraMatrix);
 		rc.cam.projectionMatrix = proj;
 		rc.cmd.SetProjectionMatrix(rc.cam.projectionMatrix);
-		rc.cmd.SetViewport(viewport);
+		rc.viewport = viewport;
+		rc.cmd.SetViewport(rc.viewport);
 
 		rc.cmd.EndSample(sampleName);
 	}
