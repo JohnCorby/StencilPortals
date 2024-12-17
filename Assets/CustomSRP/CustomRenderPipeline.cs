@@ -55,7 +55,7 @@ public class CustomRenderPipeline : RenderPipeline
 			cam = camera,
 			viewport = new Rect(0, 0, camera.pixelWidth, camera.pixelHeight)
 		};
-		RenderPortal(rc, null, 0, camera.transform.localToWorldMatrix, camera.projectionMatrix);
+		RenderPortal(rc, null, 0, camera.projectionMatrix);
 
 		// cant render this per portal, it doesnt move for some reason
 		cmd.DrawRendererList(context.CreateGizmoRendererList(camera, GizmoSubset.PreImageEffects));
@@ -75,7 +75,7 @@ public class CustomRenderPipeline : RenderPipeline
 	/// <summary>
 	/// render a portal. null = render initial camera
 	/// </summary>
-	private void RenderPortal(RenderContext rc, Portal portal, int currentDepth, Matrix4x4 originaLocalToWorld, Matrix4x4 originalProj)
+	private void RenderPortal(RenderContext rc, Portal portal, int currentDepth, Matrix4x4 originalProj)
 	{
 		rc.cam.TryGetCullingParameters(out var cullingParameters);
 		var cullingResults = rc.ctx.Cull(ref cullingParameters);
@@ -98,9 +98,9 @@ public class CustomRenderPipeline : RenderPipeline
 
 				PunchHole(rc, innerPortal, ref currentDepth);
 
-				SetupCamera(ref rc, innerPortal, originaLocalToWorld, originalProj);
+				SetupCamera(ref rc, innerPortal, originalProj);
 
-				RenderPortal(rc, innerPortal, currentDepth, originaLocalToWorld, originalProj);
+				RenderPortal(rc, innerPortal, currentDepth, originalProj);
 
 				UnsetupCamera(ref rc, localToWorld, proj, viewport);
 
@@ -178,13 +178,9 @@ public class CustomRenderPipeline : RenderPipeline
 	/// get viewport of portal with current view and original proj
 	/// </summary>
 	/// <returns></returns>
-	private Rect GetBoundingRectangle(RenderContext rc, Portal portal, Matrix4x4 originaLocalToWorld, Matrix4x4 originalProj)
+	private Rect GetBoundingRectangle(RenderContext rc, Portal portal, Matrix4x4 originalProj)
 	{
-		// we want to keep camera relative to whatever portal we're looking through
-		// but we also want the original proj
-		var localToWorld = rc.cam.transform.localToWorldMatrix;
 		var proj = rc.cam.projectionMatrix;
-		// rc.cam.transform.SetPositionAndRotation(originaLocalToWorld.GetPosition(), originaLocalToWorld.rotation);
 		rc.cam.projectionMatrix = originalProj;
 
 		// var screenPoint = ctx.cam.WorldToScreenPoint(portal.transform.position);
@@ -207,7 +203,6 @@ public class CustomRenderPipeline : RenderPipeline
 		var bottom = screenCorners.Select(x => x.y).Min();
 		var top = screenCorners.Select(x => x.y).Max();
 
-		rc.cam.transform.SetPositionAndRotation(localToWorld.GetPosition(), localToWorld.rotation);
 		rc.cam.projectionMatrix = proj;
 
 		return new Rect(left, bottom, right - left, top - bottom);
@@ -216,7 +211,7 @@ public class CustomRenderPipeline : RenderPipeline
 	/// <summary>
 	/// setup camera matrices and viewport
 	/// </summary>
-	private void SetupCamera(ref RenderContext rc, Portal portal, Matrix4x4 originaLocalToWorld, Matrix4x4 originalProj)
+	private void SetupCamera(ref RenderContext rc, Portal portal, Matrix4x4 originalProj)
 	{
 		var fromPortal = portal;
 		var toPortal = portal.LinkedPortal;
@@ -228,7 +223,7 @@ public class CustomRenderPipeline : RenderPipeline
 		// https://github.com/MagnusCaligo/Outer_Portals/blob/master/Outer_Portals/PortalController.cs#L143-L157
 		// TODO use cleaner https://discussions.unity.com/t/scissor-rectangle/404230
 		{
-			rc.viewport = GetBoundingRectangle(rc, fromPortal, originaLocalToWorld, originalProj);
+			rc.viewport = GetBoundingRectangle(rc, fromPortal, originalProj);
 			// viewport.x = Mathf.Round(viewport.x);
 			// viewport.y = Mathf.Round(viewport.y);
 			// viewport.width = Mathf.Clamp(Mathf.Round(viewport.width), 1, ctx.cam.pixelWidth);
