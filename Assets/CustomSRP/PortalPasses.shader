@@ -52,9 +52,10 @@
                 return TransformObjectToHClip(positionOS);
             }
 
-            void UnlitPassFragment()
+            float3 UnlitPassFragment() : SV_Target
             {
-                // write nothing
+                // write skybox color
+                return 1;
             }
             ENDHLSL
         }

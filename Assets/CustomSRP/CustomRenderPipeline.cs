@@ -47,7 +47,7 @@ public class CustomRenderPipeline : RenderPipeline
 		var sampleName = $"render camera \"{camera.name}\"";
 		cmd.BeginSample(sampleName);
 
-		cmd.ClearRenderTarget(true, true, Color.clear);
+		cmd.ClearRenderTarget(true, true, Color.white);
 
 		var rc = new RenderContext
 		{
@@ -119,7 +119,7 @@ public class CustomRenderPipeline : RenderPipeline
 		// cant check stencil without making new skybox material
 		// its okay because the correct skybox gets drawn over everything last
 		// BUG: gets shifted around by viewport projection
-		rc.cmd.DrawRendererList(rc.ctx.CreateSkyboxRendererList(rc.cam));
+		// rc.cmd.DrawRendererList(rc.ctx.CreateSkyboxRendererList(rc.cam));
 	}
 
 	private IEnumerable<Portal> GetInnerPortals(RenderContext rc, Portal portal)
@@ -197,6 +197,10 @@ public class CustomRenderPipeline : RenderPipeline
 			portal.transform.position + (portal.transform.up - portal.transform.right) * 1.5f,
 		};
 		var screenCorners = worldCorners.Select(x => rc.cam.WorldToScreenPoint(x));
+
+		// if any of the corners are behind the camera, just set viewport to full screen lol
+		// this is terrible, i dont know why i have to do 1 instead of 0 :(
+		if (screenCorners.Any(x => x.z < 1)) return new Rect(0, 0, rc.cam.pixelWidth, rc.cam.pixelHeight);
 
 		var left = screenCorners.Select(x => x.x).Min();
 		var right = screenCorners.Select(x => x.x).Max();
