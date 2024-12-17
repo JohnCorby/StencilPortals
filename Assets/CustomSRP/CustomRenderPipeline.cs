@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RendererUtils;
@@ -58,8 +59,11 @@ public class CustomRenderPipeline : RenderPipeline
 		RenderPortal(rc, null, 0);
 
 		// cant render this per portal, it doesnt move for some reason
-		cmd.DrawRendererList(context.CreateGizmoRendererList(camera, GizmoSubset.PreImageEffects));
-		cmd.DrawRendererList(context.CreateGizmoRendererList(camera, GizmoSubset.PostImageEffects));
+		if (Handles.ShouldRenderGizmos())
+		{
+			cmd.DrawRendererList(context.CreateGizmoRendererList(camera, GizmoSubset.PreImageEffects));
+			cmd.DrawRendererList(context.CreateGizmoRendererList(camera, GizmoSubset.PostImageEffects));
+		}
 
 		cmd.EndSample(sampleName);
 
