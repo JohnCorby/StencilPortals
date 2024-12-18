@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RendererUtils;
 
@@ -54,7 +55,7 @@ public class CustomRenderPipeline : RenderPipeline
 		}
 
 		var rt = Shader.PropertyToID("_CameraFrameBuffer");
-		cmd.GetTemporaryRT(rt, camera.pixelWidth, camera.pixelHeight, 32, FilterMode.Bilinear, RenderTextureFormat.DefaultHDR);
+		cmd.GetTemporaryRT(rt, camera.pixelWidth, camera.pixelHeight, 32, FilterMode.Bilinear, GraphicsFormat.R16G16B16A16_SFloat, 8);
 		cmd.SetRenderTarget(rt);
 
 		cmd.ClearRenderTarget(true, true, Color.white);
