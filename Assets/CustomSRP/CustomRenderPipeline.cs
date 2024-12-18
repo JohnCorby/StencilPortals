@@ -48,6 +48,12 @@ public class CustomRenderPipeline : RenderPipeline
 		var sampleName = $"render camera \"{camera.name}\"";
 		cmd.BeginSample(sampleName);
 
+		{
+			var light = RenderSettings.sun;
+			cmd.SetGlobalVector("_DirectionalLightColor", light.color * light.intensity);
+			cmd.SetGlobalVector("_DirectionalLightDirection", -light.transform.forward);
+		}
+
 		var rt = Shader.PropertyToID("_CameraFrameBuffer");
 		cmd.GetTemporaryRT(rt, camera.pixelWidth, camera.pixelHeight, 32, FilterMode.Bilinear, RenderTextureFormat.DefaultHDR);
 		cmd.SetRenderTarget(rt);

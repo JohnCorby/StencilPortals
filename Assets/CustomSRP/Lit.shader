@@ -36,7 +36,9 @@
 
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
-            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
+
+            float3 _DirectionalLightColor;
+            float3 _DirectionalLightDirection;
 
             struct Attributes
             {
@@ -60,9 +62,11 @@
 
             float3 LitPassFragment(Varyings input) : SV_Target
             {
-                float3 lightDirWS = normalize(float3(1, 1, 1));
-                float3 ramp = saturate(dot(input.normalWS, lightDirWS) * .5 + .5);
+                float3 ramp = saturate(dot(input.normalWS, _DirectionalLightDirection) * .5 + .5) * _DirectionalLightColor;
                 return ramp;
+
+                float3 diffuse = saturate(dot(input.normalWS, _DirectionalLightDirection)) * _DirectionalLightColor;
+                return diffuse;
             }
             ENDHLSL
         }

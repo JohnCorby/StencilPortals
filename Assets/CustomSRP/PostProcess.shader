@@ -69,6 +69,8 @@
                 float3 src = tex2D(_MainTex, input.uv);
                 // src = float3(input.uv.xy, 0);
 
+                // src *= LinearToSRGB(tex2D(_RedBlueGradient, input.uv.y));
+
                 src.y = 1 - src.y;
                 float3 dst = tex3D(_Lut, src);
                 // dst = src;
