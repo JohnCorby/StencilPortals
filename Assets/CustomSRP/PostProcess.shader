@@ -50,13 +50,15 @@
             float3 UnlitPassFragment(Varyings input) : SV_Target
             {
                 float3 src = tex2D(_MainTex, input.uv);
+                if (input.uv.y > .5) return SRGBToLinear(src);
+
+                src += .2;
                 // src = float3(input.uv.xy, 0);
 
                 // src *= LinearToSRGB(tex2D(_RedBlueGradient, input.uv.y));
 
                 src.y = 1 - src.y;
                 float3 dst = tex3D(_Lut, src);
-                // dst = SRGBToLinear(src);
 
                 // dst *= tex2D(_YellowGreenGradient, input.uv.x);
                 dst = lerp(dst, dst * tex2D(_RedBlueGradient, 1 - input.uv.y), 1 - Luminance(dst));

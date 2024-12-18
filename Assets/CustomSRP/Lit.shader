@@ -46,7 +46,7 @@
                 // return ramp;
 
                 float3 diffuse = saturate(dot(input.normalWS, _DirectionalLightDirection)) * _DirectionalLightColor / PI;
-                float3 ambient = _AmbientLightColor;
+                float3 ambient = 0;
                 return diffuse + ambient;
             }
             ENDHLSL
