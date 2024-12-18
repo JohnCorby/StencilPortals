@@ -37,6 +37,7 @@
 
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
 
             sampler2D _MainTex;
             sampler3D _Lut;
@@ -67,7 +68,8 @@
             {
                 float3 src = tex2D(_MainTex, input.uv);
                 // src = float3(input.uv.xy, 0);
-                src.y = 1-src.y;
+
+                src.y = 1 - src.y;
                 float3 dst = tex3D(_Lut, src);
                 // dst = src;
 
