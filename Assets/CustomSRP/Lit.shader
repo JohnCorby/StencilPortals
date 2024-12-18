@@ -66,7 +66,7 @@
                 // float3 ramp = saturate(dot(input.normalWS, _DirectionalLightDirection) * .5 + .5) * _DirectionalLightColor;
                 // return ramp;
 
-                float3 diffuse = saturate(dot(input.normalWS, _DirectionalLightDirection)) * _DirectionalLightColor;
+                float3 diffuse = saturate(dot(input.normalWS, _DirectionalLightDirection)) * _DirectionalLightColor / PI;
                 float3 ambient = _AmbientLightColor;
                 return diffuse + ambient;
             }
