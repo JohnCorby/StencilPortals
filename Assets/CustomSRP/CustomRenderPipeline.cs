@@ -52,6 +52,7 @@ public class CustomRenderPipeline : RenderPipeline
 			var light = RenderSettings.sun;
 			cmd.SetGlobalVector("_DirectionalLightColor", light.color * light.intensity);
 			cmd.SetGlobalVector("_DirectionalLightDirection", -light.transform.forward);
+			cmd.SetGlobalVector("_AmbientLightColor", RenderSettings.ambientLight);
 		}
 
 		var rt = Shader.PropertyToID("_CameraFrameBuffer");
