@@ -72,6 +72,7 @@ public class CustomRenderPipeline : RenderPipeline
 		cmd.EndSample(sampleName);
 
 		cmd.Blit(rt, BuiltinRenderTextureType.CameraTarget);
+		cmd.ReleaseTemporaryRT(rt);
 
 		context.ExecuteCommandBuffer(cmd);
 		context.Submit();
