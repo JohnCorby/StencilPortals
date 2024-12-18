@@ -47,6 +47,10 @@ public class CustomRenderPipeline : RenderPipeline
 		var sampleName = $"render camera \"{camera.name}\"";
 		cmd.BeginSample(sampleName);
 
+		var rt = Shader.PropertyToID("_CameraFrameBuffer");
+		cmd.GetTemporaryRT(rt, camera.pixelWidth, camera.pixelHeight, 32, FilterMode.Bilinear);
+		cmd.SetRenderTarget(rt);
+
 		cmd.ClearRenderTarget(true, true, Color.white);
 
 		var rc = new RenderContext
@@ -66,6 +70,8 @@ public class CustomRenderPipeline : RenderPipeline
 		}
 
 		cmd.EndSample(sampleName);
+
+		cmd.Blit(rt, BuiltinRenderTextureType.CameraTarget);
 
 		context.ExecuteCommandBuffer(cmd);
 		context.Submit();
@@ -202,10 +208,11 @@ public class CustomRenderPipeline : RenderPipeline
 		// this is terrible, i dont know why i have to do 1 instead of 0 :(
 		if (screenCorners.Any(x => x.z < 1)) return new Rect(0, 0, rc.cam.pixelWidth, rc.cam.pixelHeight);
 
-		var left = screenCorners.Select(x => x.x).Min();
-		var right = screenCorners.Select(x => x.x).Max();
-		var bottom = screenCorners.Select(x => x.y).Min();
-		var top = screenCorners.Select(x => x.y).Max();
+		// viewport expects whole numbers
+		var left = (int)screenCorners.Min(x => x.x);
+		var right = (int)screenCorners.Max(x => x.x);
+		var bottom = (int)screenCorners.Min(x => x.y);
+		var top = (int)screenCorners.Max(x => x.y);
 
 		return new Rect(left, bottom, right - left, top - bottom);
 	}
