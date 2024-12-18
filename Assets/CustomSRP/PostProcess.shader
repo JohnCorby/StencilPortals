@@ -76,7 +76,7 @@
                 // dst = src;
 
                 // dst *= tex2D(_YellowGreenGradient, input.uv.x);
-                // dst *= tex2D(_RedBlueGradient, input.uv.y);
+                // dst = lerp(dst, dst * tex2D(_RedBlueGradient, input.uv.y), 1 - Luminance(dst));
 
                 return dst;
             }
