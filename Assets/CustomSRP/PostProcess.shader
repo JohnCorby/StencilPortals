@@ -76,7 +76,7 @@
                 // dst = SRGBToLinear(src);
 
                 // dst *= tex2D(_YellowGreenGradient, input.uv.x);
-                dst = lerp(dst, dst * tex2D(_RedBlueGradient, input.uv.y), 1 - Luminance(dst));
+                dst = lerp(dst, dst * tex2D(_RedBlueGradient, 1 - input.uv.y), 1 - Luminance(dst));
 
                 return dst;
             }
