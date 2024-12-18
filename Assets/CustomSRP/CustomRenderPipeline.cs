@@ -69,10 +69,10 @@ public class CustomRenderPipeline : RenderPipeline
 			cmd.DrawRendererList(context.CreateGizmoRendererList(camera, GizmoSubset.PostImageEffects));
 		}
 
-		cmd.EndSample(sampleName);
-
-		cmd.Blit(rt, BuiltinRenderTextureType.CameraTarget);
+		cmd.Blit(rt, BuiltinRenderTextureType.CameraTarget, _asset.PostProcessMaterial);
 		cmd.ReleaseTemporaryRT(rt);
+
+		cmd.EndSample(sampleName);
 
 		context.ExecuteCommandBuffer(cmd);
 		context.Submit();

@@ -14,3 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   PortalPassesMaterial: {fileID: 2100000, guid: f9ee3b84a06335c45afa9832e7930a5c, type: 2}
   MaxDepth: 10
+  PostProcessMaterial: {fileID: 2100000, guid: 06e4d6205dd42974c8c4269898059799, type: 2}

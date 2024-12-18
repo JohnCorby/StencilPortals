@@ -7,6 +7,7 @@ public class CustomRenderPipelineAsset : RenderPipelineAsset<CustomRenderPipelin
 	public Material PortalPassesMaterial;
 	[Range(0, 10)]
 	public int MaxDepth = 1;
+	public Material PostProcessMaterial;
 
 	protected override RenderPipeline CreatePipeline()
 	{
