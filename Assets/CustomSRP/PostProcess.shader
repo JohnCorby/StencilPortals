@@ -7,6 +7,7 @@
         [NoScaleOffset] _Lut ("LUT", 3D) = ""
         [NoScaleOffset] _RedBlueGradient ("Red Blue Gradient", 2D) = ""
         [NoScaleOffset] _YellowGreenGradient ("Yellow Green Gradient", 2D) = ""
+        _VignetteParams ("Vignette Params (intensity, roundness, smoothness)", Vector) = (0,0,0,0)
 
         [NoScaleOffset] _TestInput ("test input", 2D) = ""
         [NoScaleOffset] _TestOutput ("test output", 2D) = ""
@@ -33,6 +34,7 @@
             sampler2D _YellowGreenGradient;
 
             float3 _AmbientLightColor;
+            float3 _VignetteParams;
 
             sampler2D _TestInput;
             sampler2D _TestOutput;
@@ -50,6 +52,17 @@
                 float2 uv : uv;
             };
 
+            // stolen from URP
+            half3 ApplyVignette(half3 input, float2 uv, float2 center, float intensity, float roundness, float smoothness, half3 color)
+            {
+                // center = UnityStereoTransformScreenSpaceTex(center);
+                float2 dist = abs(uv - center) * intensity;
+
+                dist.x *= roundness;
+                float vfactor = pow(saturate(1.0 - dot(dist, dist)), smoothness);
+                return input * lerp(color, (1.0).xxx, vfactor);
+            }
+
             Varyings UnlitPassVertex(Attributes input)
             {
                 Varyings output;
@@ -63,27 +76,29 @@
                 {
                     float2 uv = input.uv;
                     uv.y = 1 - uv.y;
-                    float3 src = uv.x < _TestSlider.x ? tex2D(_TestInput, uv) : tex2D(_TestOutput, uv);
+                    float3 col = uv.x < _TestSlider.x ? tex2D(_TestInput, uv) : tex2D(_TestOutput, uv);
                     if (uv.y < _TestSlider.y)
-                        return SRGBToLinear(src);
+                        return SRGBToLinear(col);
                 }
 
-                float3 src = tex2D(_MainTex, input.uv);
+                float3 col = tex2D(_MainTex, input.uv);
 
-                // src = float3(input.uv.xy, 0);
+                // col = float3(input.uv.xy, 0);
 
                 if (input.uv.x < _TestSlider.x)
-                    return SRGBToLinear(src);
+                    return SRGBToLinear(col);
 
-                // src *= LinearToSRGB(tex2D(_RedBlueGradient, input.uv.y));
+                // col *= LinearToSRGB(tex2D(_RedBlueGradient, input.uv.y));
 
-                // src.y = 1 - src.y;
-                float3 dst = tex3D(_Lut, src);
+                // col.y = 1 - col.y;
+                col = tex3D(_Lut, col);
 
-                // dst = lerp(dst, dst * tex2D(_YellowGreenGradient, input.uv), 1 - Luminance(dst));
-                dst = lerp(dst, dst * tex2D(_RedBlueGradient, input.uv), 1 - Luminance(dst));
+                col = ApplyVignette(col, input.uv, .5, _VignetteParams.x,  _VignetteParams.y, _VignetteParams.z, 0);
 
-                return dst;
+                // col = lerp(col, col * tex2D(_YellowGreenGradient, input.uv), 1 - Luminance(col));
+                col = lerp(col, col * tex2D(_RedBlueGradient, input.uv), 1 - Luminance(col));
+
+                return col;
             }
             ENDHLSL
         }
