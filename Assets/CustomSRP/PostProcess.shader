@@ -90,13 +90,14 @@
 
                 // col *= LinearToSRGB(tex2D(_RedBlueGradient, input.uv.y));
 
+                col = ApplyVignette(col, input.uv, .5, _VignetteParams.x,  _VignetteParams.y, _VignetteParams.z, 0);
+
                 // col.y = 1 - col.y;
                 col = tex3D(_Lut, col);
 
-                col = ApplyVignette(col, input.uv, .5, _VignetteParams.x,  _VignetteParams.y, _VignetteParams.z, 0);
-
                 // col = lerp(col, col * tex2D(_YellowGreenGradient, input.uv), 1 - Luminance(col));
-                col = lerp(col, col * tex2D(_RedBlueGradient, input.uv), 1 - Luminance(col));
+                // col = lerp(col, col * tex2D(_RedBlueGradient, input.uv), 1 - Luminance(col));
+                col = lerp(col, col * tex2D(_RedBlueGradient, input.uv) * tex2D(_YellowGreenGradient, input.uv), 1 - Luminance(col));
 
                 return col;
             }
