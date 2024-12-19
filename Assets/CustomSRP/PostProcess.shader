@@ -24,6 +24,7 @@
             #pragma fragment UnlitPassFragment
 
             #include "Common.hlsl"
+            #include "URP.hlsl"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
 
             sampler2D _ColorBuffer;
@@ -53,17 +54,6 @@
                 float4 positionCS : SV_POSITION;
                 float2 uv : uv;
             };
-
-            // stolen from URP
-            half3 ApplyVignette(half3 input, float2 uv, float2 center, float intensity, float roundness, float smoothness, half3 color)
-            {
-                // center = UnityStereoTransformScreenSpaceTex(center);
-                float2 dist = abs(uv - center) * intensity;
-
-                dist.x *= roundness;
-                float vfactor = pow(saturate(1.0 - dot(dist, dist)), smoothness);
-                return input * lerp(color, (1.0).xxx, vfactor);
-            }
 
             // for now its the bad algorithm
             float Edge(float2 uv)

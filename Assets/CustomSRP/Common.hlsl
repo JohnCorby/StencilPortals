@@ -24,3 +24,5 @@ float4x4 glstate_matrix_projection;
 #define UNITY_MATRIX_P glstate_matrix_projection
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
+
+float4 unity_FogParams;
