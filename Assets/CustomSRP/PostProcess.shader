@@ -36,14 +36,15 @@
             sampler2D _RedBlueGradient;
             sampler2D _YellowGreenGradient;
 
-            float3 _AmbientLightColor;
             float3 _VignetteParams;
 
             sampler2D _TestInput;
             sampler2D _TestOutput;
             float4 _TestSlider;
 
-            float4x4 _InvViewProj;
+            float3 _AmbientLightColor;
+            // TL, TR, BL, BR
+            float3 _CameraCorners[4];
 
             struct Attributes
             {
@@ -56,6 +57,15 @@
                 float4 positionCS : SV_POSITION;
                 float2 uv : uv;
             };
+
+            float3 GetWorldPos(float2 uv, float distance)
+            {
+                float3 top = lerp(_CameraCorners[0], _CameraCorners[1], uv.x);
+                float3 bottom = lerp(_CameraCorners[2], _CameraCorners[3], uv.x);
+                float3 ray = lerp(bottom, top, uv.y);
+
+                return normalize(ray) * distance;
+            }
 
             // for now its the bad algorithm
             float Edge(float2 uv)
@@ -74,8 +84,8 @@
 
                         float3 normal_n = tex2D(_NormalBuffer, n);
                         float3 normal_pixel = tex2D(_NormalBuffer, pixel);
-                        float3 world_position_n = ComputeWorldSpacePosition(n, tex2D(_DepthBuffer, n), _InvViewProj);
-                        float3 world_position_pixel = ComputeWorldSpacePosition(pixel, tex2D(_DepthBuffer, pixel), _InvViewProj);
+                        float3 world_position_n = GetWorldPos(n, tex2D(_DepthBuffer, n));
+                        float3 world_position_pixel = GetWorldPos(pixel, tex2D(_DepthBuffer, pixel));
 
                         float normalDist = dot(normal_n, normal_pixel);
                         float planeDistance = abs(dot(normal_pixel, world_position_n - world_position_pixel));

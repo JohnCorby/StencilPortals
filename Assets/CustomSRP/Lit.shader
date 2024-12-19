@@ -31,6 +31,7 @@
             {
                 float4 positionCS : SV_POSITION;
                 float3 normalWS : normalWS;
+                float3 positionVS : positionWS;
             };
 
             struct FragmentOutput
@@ -45,6 +46,7 @@
                 Varyings output;
                 output.positionCS = TransformObjectToHClip(input.positionOS);
                 output.normalWS = TransformObjectToWorldNormal(input.normalOS, true);
+                output.positionVS = TransformWorldToView(TransformObjectToWorld(input.positionOS));
                 return output;
             }
 
@@ -61,7 +63,7 @@
 
                 output.normalVS = TransformWorldToViewNormal(input.normalWS, true);
 
-                output.customDepth = input.positionCS.z; // same as regular depth for now
+                output.customDepth = length(input.positionVS); // use distance from camera instead of depth
 
                 return output;
             }
