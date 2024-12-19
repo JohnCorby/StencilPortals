@@ -57,7 +57,7 @@ Material:
     - _TestSliderY: 0.5
     - _Wtf: 1
     m_Colors:
-    - _TestSlider: {r: 0, g: -0.42, b: 0, a: 0}
+    - _TestSlider: {r: 0, g: 0, b: 0, a: 0}
     - _VignetteParams: {r: 1, g: 1, b: 2.5, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
