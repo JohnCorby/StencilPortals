@@ -63,7 +63,7 @@ public class CustomRenderPipeline : RenderPipeline
 		cmd.GetTemporaryRT(rt2, camera.pixelWidth, camera.pixelHeight, 0, FilterMode.Point, GraphicsFormat.R32_SFloat, 8);
 		cmd.SetRenderTarget(colors: new RenderTargetIdentifier[] { rt0, rt1, rt2 }, depth: rt0);
 
-		cmd.ClearRenderTarget(true, true, Color.white);
+		cmd.ClearRenderTarget(RTClearFlags.All, new[] { Color.white, Color.clear, Color.clear });
 
 		var rc = new RenderContext
 		{

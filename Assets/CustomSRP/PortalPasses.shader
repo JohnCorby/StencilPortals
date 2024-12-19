@@ -8,9 +8,9 @@
         #include "Common.hlsl"
         ENDHLSL
 
-        // punch hole pass
         Pass
         {
+            Name "punch hole"
             ZWrite Off
             Stencil
             {
@@ -28,17 +28,16 @@
                 return TransformObjectToHClip(positionOS);
             }
 
-            float3 UnlitPassFragment() : SV_Target
+            void UnlitPassFragment()
             {
-                // write skybox color
-                return 1;
+                // read depth, write stencil
             }
             ENDHLSL
         }
 
-        // write depth pass
         Pass
         {
+            Name "clear"
             ZTest Always
             Stencil
             {
@@ -50,22 +49,35 @@
             #pragma vertex UnlitPassVertex
             #pragma fragment UnlitPassFragment
 
+            struct FragmentOutput
+            {
+                float3 color : SV_Target0;
+                float3 normalVS : SV_Target1;
+                float customDepth : SV_Target2;
+                float depth : SV_Depth;
+            };
+
             float4 UnlitPassVertex(float4 positionOS : POSITION) : SV_POSITION
             {
                 return TransformObjectToHClip(positionOS);
             }
 
-            float UnlitPassFragment() : SV_Depth
+            FragmentOutput UnlitPassFragment()
             {
-                // write only depth
-                return 0;
+                // read stencil, write targets and depth
+                FragmentOutput output;
+                output.color = 1;
+                output.normalVS = 0;
+                output.customDepth = 0;
+                output.depth = 0;
+                return output;
             }
             ENDHLSL
         }
 
-        // unpunch hole pass
         Pass
         {
+            Name "unpunch hole"
             ZTest Always
             Stencil
             {
@@ -85,7 +97,7 @@
 
             void UnlitPassFragment()
             {
-                // write nothing
+                // read stencil, write stencil and depth
             }
             ENDHLSL
         }

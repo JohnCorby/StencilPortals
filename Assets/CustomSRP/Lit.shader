@@ -37,7 +37,7 @@
             {
                 float3 color : SV_Target0;
                 float3 normalVS : SV_Target1;
-                float depth : SV_Target2;
+                float customDepth : SV_Target2;
             };
 
             Varyings LitPassVertex(Attributes input)
@@ -61,7 +61,7 @@
 
                 output.normalVS = TransformWorldToViewNormal(input.normalWS, true);
 
-                output.depth = input.positionCS.z; // wrong
+                output.customDepth = input.positionCS.z; // wrong
 
                 return output;
             }

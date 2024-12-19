@@ -13,6 +13,7 @@ half3 ApplyVignette(half3 input, float2 uv, float2 center, float intensity, floa
 
 
 
+#define FOG_LINEAR
 
 real ComputeFogFactorZ0ToFar(float z)
 {
