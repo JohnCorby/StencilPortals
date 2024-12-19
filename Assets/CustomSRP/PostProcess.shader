@@ -89,6 +89,7 @@
 
                         float normalDist = dot(normal_n, normal_pixel);
                         float planeDistance = abs(dot(normal_pixel, world_position_n - world_position_pixel));
+                        planeDistance = length(world_position_n - world_position_pixel);
 
                         if (normalDist < cos(alpha) || planeDistance > eps)
                         {
