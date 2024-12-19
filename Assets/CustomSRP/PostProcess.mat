@@ -28,7 +28,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _Lut:
-        m_Texture: {fileID: 11700000, guid: 2a375d0fa40f45f4ea791df9558c7a4b, type: 3}
+        m_Texture: {fileID: 11700000, guid: cd9e00451aeb6444d9d217aeeb868f9a, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
@@ -36,7 +36,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _RedBlueGradient:
-        m_Texture: {fileID: 2800000, guid: 56f059ee18f0dbb448803d62a4d07c12, type: 3}
+        m_Texture: {fileID: 2800000, guid: a8d36a41df43e7843afd8024c38cb8cd, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _TestInput:
@@ -48,7 +48,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _YellowGreenGradient:
-        m_Texture: {fileID: 2800000, guid: b7d71e9ee570d214499429aa15a71765, type: 3}
+        m_Texture: {fileID: 2800000, guid: 3b0e115f6d6a5634cb3a3e1ec9a9f4f6, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
@@ -57,6 +57,6 @@ Material:
     - _TestSliderY: 0.5
     - _Wtf: 1
     m_Colors:
-    - _TestSlider: {r: 0.26, g: 0.74, b: 0, a: 0}
+    - _TestSlider: {r: 0.16, g: 0.24, b: 0, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

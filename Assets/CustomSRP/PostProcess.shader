@@ -78,11 +78,11 @@
 
                 // src *= LinearToSRGB(tex2D(_RedBlueGradient, input.uv.y));
 
-                src.y = 1 - src.y;
+                // src.y = 1 - src.y;
                 float3 dst = tex3D(_Lut, src);
 
-                // dst = lerp(dst, dst * tex2D(_YellowGreenGradient, input.uv.x), 1 - Luminance(dst));
-                dst = lerp(dst, dst * tex2D(_RedBlueGradient, 1 - input.uv.y), 1 - Luminance(dst));
+                // dst = lerp(dst, dst * tex2D(_YellowGreenGradient, input.uv), 1 - Luminance(dst));
+                dst = lerp(dst, dst * tex2D(_RedBlueGradient, input.uv), 1 - Luminance(dst));
 
                 return dst;
             }
