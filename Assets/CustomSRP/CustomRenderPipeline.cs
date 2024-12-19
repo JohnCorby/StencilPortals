@@ -58,9 +58,9 @@ public class CustomRenderPipeline : RenderPipeline
 		var rt0 = Shader.PropertyToID("_ColorBuffer");
 		var rt1 = Shader.PropertyToID("_NormalBuffer");
 		var rt2 = Shader.PropertyToID("_DepthBuffer");
-		cmd.GetTemporaryRT(rt0, camera.pixelWidth, camera.pixelHeight, 32, FilterMode.Bilinear, GraphicsFormat.R16G16B16A16_SFloat, 8);
-		cmd.GetTemporaryRT(rt1, camera.pixelWidth, camera.pixelHeight, 0, FilterMode.Bilinear, GraphicsFormat.R16G16B16A16_SFloat, 8);
-		cmd.GetTemporaryRT(rt2, camera.pixelWidth, camera.pixelHeight, 0, FilterMode.Bilinear, GraphicsFormat.R16G16B16A16_SFloat, 8);
+		cmd.GetTemporaryRT(rt0, camera.pixelWidth, camera.pixelHeight, 32, FilterMode.Point, GraphicsFormat.R16G16B16A16_SFloat, 8);
+		cmd.GetTemporaryRT(rt1, camera.pixelWidth, camera.pixelHeight, 0, FilterMode.Point, GraphicsFormat.R16G16B16A16_SFloat, 8);
+		cmd.GetTemporaryRT(rt2, camera.pixelWidth, camera.pixelHeight, 0, FilterMode.Point, GraphicsFormat.R32_SFloat, 8);
 		cmd.SetRenderTarget(colors: new RenderTargetIdentifier[] { rt0, rt1, rt2 }, depth: rt0);
 
 		cmd.ClearRenderTarget(true, true, Color.white);
