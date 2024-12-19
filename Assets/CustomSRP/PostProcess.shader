@@ -73,7 +73,6 @@
 
             float3 UnlitPassFragment(Varyings input) : SV_Target
             {
-                /*
                 {
                     float2 uv = input.uv;
                     uv.y = 1 - uv.y;
@@ -81,10 +80,8 @@
                     if (uv.y < _TestSlider.y)
                         return SRGBToLinear(col);
                 }
-                */
 
-                float3 col = tex2D(_MainTex, input.uv);
-                // float3 col = tex2D(_TestInput, float2(input.uv.x, 1-input.uv.y));
+                float3 col = input.uv.x > _TestSlider.z ? tex2D(_MainTex, input.uv) : tex2D(_TestInput, float2(input.uv.x, 1-input.uv.y));
 
                 // col = float3(input.uv.xy, 0);
 
