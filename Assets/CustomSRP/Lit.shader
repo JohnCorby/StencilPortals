@@ -61,7 +61,7 @@
 
                 output.normalVS = TransformWorldToViewNormal(input.normalWS, true);
 
-                output.customDepth = input.positionCS.z; // wrong
+                output.customDepth = input.positionCS.z; // same as regular depth for now
 
                 return output;
             }

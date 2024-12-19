@@ -81,6 +81,18 @@ public class CustomRenderPipeline : RenderPipeline
 			cmd.DrawRendererList(context.CreateGizmoRendererList(camera, GizmoSubset.PostImageEffects));
 		}
 
+		// copied from URP. this sucks
+		{
+			var viewMatrix = camera.worldToCameraMatrix;
+			var projectionMatrix = camera.projectionMatrix;
+
+			Matrix4x4 gpuProjectionMatrix = GL.GetGPUProjectionMatrix(projectionMatrix, true);
+			Matrix4x4 inverseViewMatrix = Matrix4x4.Inverse(viewMatrix);
+			Matrix4x4 inverseProjectionMatrix = Matrix4x4.Inverse(gpuProjectionMatrix);
+			Matrix4x4 inverseViewProjection = inverseViewMatrix * inverseProjectionMatrix;
+			cmd.SetGlobalMatrix("_InvViewProj", inverseViewProjection);
+		}
+
 		cmd.Blit(BuiltinRenderTextureType.None, BuiltinRenderTextureType.CameraTarget, _asset.PostProcessMaterial);
 		cmd.ReleaseTemporaryRT(rt0);
 		cmd.ReleaseTemporaryRT(rt1);

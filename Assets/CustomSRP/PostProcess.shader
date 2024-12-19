@@ -43,6 +43,8 @@
             sampler2D _TestOutput;
             float4 _TestSlider;
 
+            float4x4 _InvViewProj;
+
             struct Attributes
             {
                 float3 positionOS : POSITION;
@@ -56,10 +58,12 @@
             };
 
             // for now its the bad algorithm
-            float Edge(float2 pixel)
+            float Edge(float2 uv)
             {
                 const float alpha = DegToRad(10);
-                const float eps = .01;
+                const float eps = .1;
+
+                float2 pixel = uv;
 
                 float sum = 0;
                 for (int i = -1; i <= 1; i++)
@@ -70,8 +74,8 @@
 
                         float3 normal_n = tex2D(_NormalBuffer, n);
                         float3 normal_pixel = tex2D(_NormalBuffer, pixel);
-                        float world_position_n = tex2D(_DepthBuffer, n);
-                        float world_position_pixel = tex2D(_DepthBuffer, pixel);
+                        float3 world_position_n = ComputeWorldSpacePosition(n, tex2D(_DepthBuffer, n), _InvViewProj);
+                        float3 world_position_pixel = ComputeWorldSpacePosition(pixel, tex2D(_DepthBuffer, pixel), _InvViewProj);
 
                         float normalDist = dot(normal_n, normal_pixel);
                         float planeDistance = abs(dot(normal_pixel, world_position_n - world_position_pixel));
