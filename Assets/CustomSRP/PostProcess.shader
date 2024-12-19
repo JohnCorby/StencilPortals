@@ -2,8 +2,6 @@
 {
     Properties
     {
-        [HideInInspector] _MainTex ("Main Texture", 2D) = ""
-
         [NoScaleOffset] _Lut ("LUT", 3D) = ""
         [NoScaleOffset] _RedBlueGradient ("Red Blue Gradient", 2D) = ""
         [NoScaleOffset] _YellowGreenGradient ("Yellow Green Gradient", 2D) = ""
@@ -28,7 +26,10 @@
             #include "Common.hlsl"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
 
-            sampler2D _MainTex;
+            sampler2D _ColorBuffer;
+            sampler2D _NormalBuffer;
+            sampler2D _DepthBuffer;
+
             sampler3D _Lut;
             sampler2D _RedBlueGradient;
             sampler2D _YellowGreenGradient;
@@ -81,7 +82,7 @@
                         return SRGBToLinear(col);
                 }
 
-                float3 col = input.uv.x > _TestSlider.z ? tex2D(_MainTex, input.uv) : tex2D(_TestInput, float2(input.uv.x, 1-input.uv.y));
+                float3 col = input.uv.x > _TestSlider.z ? tex2D(_ColorBuffer, input.uv) : tex2D(_TestInput, float2(input.uv.x, 1-input.uv.y));
 
                 // col = float3(input.uv.xy, 0);
 

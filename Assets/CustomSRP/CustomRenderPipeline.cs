@@ -55,9 +55,11 @@ public class CustomRenderPipeline : RenderPipeline
 			cmd.SetGlobalVector("_AmbientLightColor", RenderSettings.ambientLight);
 		}
 
-		var rt = Shader.PropertyToID("_CameraFrameBuffer");
-		cmd.GetTemporaryRT(rt, camera.pixelWidth, camera.pixelHeight, 32, FilterMode.Bilinear, GraphicsFormat.R16G16B16A16_SFloat, 8);
-		cmd.SetRenderTarget(rt);
+		var rt0 = Shader.PropertyToID("_ColorBuffer");
+		var rt1 = Shader.PropertyToID("_NormalBuffer");
+		var rt2 = Shader.PropertyToID("_DepthBuffer");
+		cmd.GetTemporaryRT(rt0, camera.pixelWidth, camera.pixelHeight, 32, FilterMode.Bilinear, GraphicsFormat.R16G16B16A16_SFloat, 8);
+		cmd.SetRenderTarget(colors: new RenderTargetIdentifier[] { rt0 }, depth: rt0);
 
 		cmd.ClearRenderTarget(true, true, Color.white);
 
@@ -77,8 +79,8 @@ public class CustomRenderPipeline : RenderPipeline
 			cmd.DrawRendererList(context.CreateGizmoRendererList(camera, GizmoSubset.PostImageEffects));
 		}
 
-		cmd.Blit(rt, BuiltinRenderTextureType.CameraTarget, _asset.PostProcessMaterial);
-		cmd.ReleaseTemporaryRT(rt);
+		cmd.Blit(rt0, BuiltinRenderTextureType.CameraTarget, _asset.PostProcessMaterial);
+		cmd.ReleaseTemporaryRT(rt0);
 
 		cmd.EndSample(sampleName);
 
