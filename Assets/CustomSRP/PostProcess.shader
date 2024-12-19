@@ -70,7 +70,6 @@
 
                 float3 src = tex2D(_MainTex, input.uv);
 
-                src += _AmbientLightColor;
                 // src = float3(input.uv.xy, 0);
 
                 if (input.uv.x < _TestSlider.x)
