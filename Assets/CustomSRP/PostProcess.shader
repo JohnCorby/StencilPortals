@@ -56,22 +56,27 @@
             };
 
             // for now its the bad algorithm
-            float Edge(float2 uv)
+            float Edge(float2 pixel)
             {
-                const float normal_eps = .01;
-                const float depth_eps = .01;
+                const float alpha = DegToRad(10);
+                const float eps = .01;
 
                 float sum = 0;
                 for (int i = -1; i <= 1; i++)
                 {
                     for (int j = -1; j <= 1; j++)
                     {
-                        float2 uv_offset = uv + float2(i,j)*_ColorBuffer_TexelSize.xy;
+                        float2 n = pixel + float2(i,j)*_ColorBuffer_TexelSize.xy;
 
-                        float normalDist = length(tex2D(_NormalBuffer, uv_offset) - tex2D(_NormalBuffer, uv));
-                        float depthDist = abs(tex2D(_DepthBuffer, uv_offset) - tex2D(_DepthBuffer, uv));
+                        float3 normal_n = tex2D(_NormalBuffer, n);
+                        float3 normal_pixel = tex2D(_NormalBuffer, pixel);
+                        float world_position_n = tex2D(_DepthBuffer, n);
+                        float world_position_pixel = tex2D(_DepthBuffer, pixel);
 
-                        if (normalDist > normal_eps || depthDist > depth_eps)
+                        float normalDist = dot(normal_n, normal_pixel);
+                        float planeDistance = abs(dot(normal_pixel, world_position_n - world_position_pixel));
+
+                        if (normalDist < cos(alpha) || planeDistance > eps)
                         {
                             // return 1;
                             sum++;

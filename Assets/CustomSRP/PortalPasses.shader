@@ -67,8 +67,8 @@
                 // read stencil, write targets and depth
                 FragmentOutput output;
                 output.color = 1;
-                output.normalVS = 0;
-                output.customDepth = 0;
+                output.normalVS = 1;
+                output.customDepth = 1;
                 output.depth = 0;
                 return output;
             }
