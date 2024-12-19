@@ -15,6 +15,7 @@
             #pragma fragment LitPassFragment
 
             #include "Common.hlsl"
+            #include "URP.hlsl"
 
             float3 _DirectionalLightColor;
             float3 _DirectionalLightDirection;

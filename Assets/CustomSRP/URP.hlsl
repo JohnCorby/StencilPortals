@@ -1,4 +1,6 @@
-﻿half3 ApplyVignette(half3 input, float2 uv, float2 center, float intensity, float roundness, float smoothness, half3 color)
+﻿#pragma once
+
+half3 ApplyVignette(half3 input, float2 uv, float2 center, float intensity, float roundness, float smoothness, half3 color)
 {
     // center = UnityStereoTransformScreenSpaceTex(center);
     float2 dist = abs(uv - center) * intensity;
@@ -27,13 +29,14 @@ real ComputeFogFactorZ0ToFar(float z)
 #endif
 }
 
-/*
+
+#define UNITY_Z_0_FAR_FROM_CLIPSPACE(coord) max(((1.0-(coord)/_ProjectionParams.y)*_ProjectionParams.z),0)
+
 real ComputeFogFactor(float zPositionCS)
 {
     float clipZ_0Far = UNITY_Z_0_FAR_FROM_CLIPSPACE(zPositionCS);
     return ComputeFogFactorZ0ToFar(clipZ_0Far);
 }
-*/
 
 half ComputeFogIntensity(half fogFactor)
 {
