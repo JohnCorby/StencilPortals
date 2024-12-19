@@ -27,6 +27,7 @@
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
 
             sampler2D _ColorBuffer;
+            float4 _ColorBuffer_TexelSize;
             sampler2D _NormalBuffer;
             sampler2D _DepthBuffer;
 
@@ -64,6 +65,34 @@
                 return input * lerp(color, (1.0).xxx, vfactor);
             }
 
+            // for now its the bad algorithm
+            float Edge(float2 uv)
+            {
+                const float normal_eps = .01;
+                const float depth_eps = .01;
+
+                float sum = 0;
+                for (int i = -1; i <= 1; i++)
+                {
+                    for (int j = -1; j <= 1; j++)
+                    {
+                        float2 uv_offset = uv + float2(i,j)*_ColorBuffer_TexelSize.xy;
+
+                        float normalDist = length(tex2D(_NormalBuffer, uv_offset) - tex2D(_NormalBuffer, uv));
+                        float depthDist = abs(tex2D(_DepthBuffer, uv_offset) - tex2D(_DepthBuffer, uv));
+
+                        if (normalDist > normal_eps || depthDist > depth_eps)
+                        {
+                            // return 1;
+                            sum++;
+                        }
+                    }
+                }
+
+                // return 0;
+                return sum/9;
+            }
+
             Varyings UnlitPassVertex(Attributes input)
             {
                 Varyings output;
@@ -90,6 +119,8 @@
                     return SRGBToLinear(col);
 
                 // col *= LinearToSRGB(tex2D(_RedBlueGradient, input.uv.y));
+
+                col *= 1-Edge(input.uv);
 
                 col = ApplyVignette(col, input.uv, .5, _VignetteParams.x,  _VignetteParams.y, _VignetteParams.z, 0);
 
