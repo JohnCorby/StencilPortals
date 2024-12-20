@@ -137,7 +137,7 @@
                     distance += _DistanceBuffer.Load(input.uv * _ColorBuffer_TexelSize.zw, sample);
                 distance /= 8;
                 // distance = _DistanceBuffer.Load(input.uv * _ColorBuffer_TexelSize.zw, 0);
-                col = lerp(col, lerp(0, LinearToSRGB(unity_FogColor), GetFogAmount(distance/2)), GetEdgeAmount(input.uv));
+                col = lerp(col, lerp(0, LinearToSRGB(unity_FogColor), GetFogAmount(distance, true)), GetEdgeAmount(input.uv));
 
                 col = ApplyVignette(col, input.uv, .5, _VignetteParams.x,  _VignetteParams.y, _VignetteParams.z, 0);
 

@@ -12,3 +12,9 @@
 #define UNITY_MATRIX_P glstate_matrix_projection
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
+
+
+float GetFogAmount(float distance, bool edge)
+{
+    return saturate(distance / (edge ? 20 : 10));
+}
