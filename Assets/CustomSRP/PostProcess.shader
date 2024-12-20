@@ -20,6 +20,7 @@
             ZWrite Off
 
             HLSLPROGRAM
+            #pragma target 4.5
             #pragma vertex UnlitPassVertex
             #pragma fragment UnlitPassFragment
 
@@ -29,8 +30,8 @@
 
             sampler2D _ColorBuffer;
             float4 _ColorBuffer_TexelSize;
-            Texture2D<float3> _NormalBuffer;
-            Texture2D<float> _DepthBuffer;
+            Texture2DMS<float3> _NormalBuffer;
+            Texture2DMS<float> _DepthBuffer;
 
             sampler3D _Lut;
             sampler2D _RedBlueGradient;
@@ -70,36 +71,39 @@
             // for now its the bad algorithm
             float Edge(float2 uv)
             {
-                const float alpha = DegToRad(10);
+                const float alpha = DegToRad(15);
                 const float eps = .1;
 
                 float2 pixel = uv;
-                float3 normal_pixel = _NormalBuffer.Load(int3(pixel*_ColorBuffer_TexelSize.zw, 0));
-                float3 world_position_pixel = GetWorldPos(pixel, _DepthBuffer.Load(int3(pixel*_ColorBuffer_TexelSize.zw, 0)));
+                float3 normal_pixel = _NormalBuffer.Load(pixel*_ColorBuffer_TexelSize.zw, 0);
+                float3 world_position_pixel = GetWorldPos(pixel, _DepthBuffer.Load(pixel*_ColorBuffer_TexelSize.zw, 0));
 
                 float sum = 0;
                 for (int i = -1; i <= 1; i++)
                 {
                     for (int j = -1; j <= 1; j++)
                     {
-                        float2 n = pixel + float2(i,j)*_ColorBuffer_TexelSize.xy;
-
-                        float3 normal_n = _NormalBuffer.Load(int3(n*_ColorBuffer_TexelSize.zw, 0));
-                        float3 world_position_n = GetWorldPos(n, _DepthBuffer.Load(int3(n*_ColorBuffer_TexelSize.zw, 0)));
-
-                        float normalDist = dot(normal_n, normal_pixel);
-                        float planeDistance = abs(dot(normal_pixel, world_position_n - world_position_pixel));
-
-                        if (normalDist < cos(alpha) || planeDistance > eps)
+                        for (int sample = 0; sample < 8; sample++)
                         {
-                            // return 1;
-                            sum++;
+                            float2 n = pixel + float2(i,j)*_ColorBuffer_TexelSize.xy;
+
+                            float3 normal_n = _NormalBuffer.Load(n*_ColorBuffer_TexelSize.zw, sample);
+                            float3 world_position_n = GetWorldPos(n, _DepthBuffer.Load(n*_ColorBuffer_TexelSize.zw, sample));
+
+                            float normalDist = dot(normal_n, normal_pixel);
+                            float planeDistance = abs(dot(normal_pixel, world_position_n - world_position_pixel));
+
+                            if (normalDist < cos(alpha) || planeDistance > eps)
+                            {
+                                // return 1;
+                                sum++;
+                            }
                         }
                     }
                 }
 
                 // return 0;
-                return sum/(3*3);
+                return sum/(3*3*8)*2;
             }
 
             Varyings UnlitPassVertex(Attributes input)

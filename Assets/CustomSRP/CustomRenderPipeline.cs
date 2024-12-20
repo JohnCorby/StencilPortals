@@ -67,7 +67,7 @@ public class CustomRenderPipeline : RenderPipeline
 			graphicsFormat = GraphicsFormat.R16G16B16A16_SFloat,
 			depthBufferBits = 0,
 			dimension = TextureDimension.Tex2D,
-			bindMS = false,
+			bindMS = true,
 		});
 		cmd.GetTemporaryRT(rt2, new RenderTextureDescriptor
 		{
@@ -77,7 +77,7 @@ public class CustomRenderPipeline : RenderPipeline
 			graphicsFormat = GraphicsFormat.R32_SFloat,
 			depthBufferBits = 0,
 			dimension = TextureDimension.Tex2D,
-			bindMS = false,
+			bindMS = true,
 		});
 		cmd.SetRenderTarget(colors: new RenderTargetIdentifier[] { rt0, rt1, rt2 }, depth: rt0);
 
