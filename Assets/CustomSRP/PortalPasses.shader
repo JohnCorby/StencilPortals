@@ -67,9 +67,8 @@
                 // read stencil, write targets and depth
                 FragmentOutput output;
                 output.color = 1;
-                // TODO: make these better
-                output.normal = 1;
-                output.distance = 1;
+                output.normal = float3(0,1,0);
+                output.distance = -1;
                 output.depth = 0;
                 return output;
             }

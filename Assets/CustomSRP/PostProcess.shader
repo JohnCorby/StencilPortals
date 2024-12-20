@@ -72,7 +72,7 @@
             float Edge(float2 uv)
             {
                 const float alpha = DegToRad(15);
-                const float eps = .1;
+                const float eps = 1.0/15;
 
                 float2 pixel = uv;
                 float3 normal_pixel = _NormalBuffer.Load(pixel*_ColorBuffer_TexelSize.zw, 0);
