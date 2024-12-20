@@ -16,6 +16,7 @@
 
             #include "Common.hlsl"
             #include "URP.hlsl"
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
 
             float3 _DirectionalLightColor;
             float3 _DirectionalLightDirection;
@@ -81,7 +82,7 @@
 
                 output.distance = length(input.positionVS);
 
-                output.color = lerp(output.color, 1, saturate(output.distance / 10)); // bad and hardcoded
+                output.color = lerp(output.color, LinearToSRGB(unity_FogColor), saturate(output.distance / 10)); // bad and hardcoded
 
                 return output;
             }

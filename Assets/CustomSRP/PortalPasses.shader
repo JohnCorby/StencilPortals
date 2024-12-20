@@ -49,6 +49,8 @@
             #pragma vertex UnlitPassVertex
             #pragma fragment UnlitPassFragment
 
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
+
             struct FragmentOutput
             {
                 float3 color : SV_Target0;
@@ -66,7 +68,7 @@
             {
                 // read stencil, write targets and depth
                 FragmentOutput output;
-                output.color = 1;
+                output.color = LinearToSRGB(unity_FogColor);
                 output.normal = float3(0,1,0);
                 output.distance = 20;
                 output.depth = 0;

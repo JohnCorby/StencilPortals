@@ -138,7 +138,7 @@
                 depth /= 8;
                 // depth = _DepthBuffer.Load(input.uv * _ColorBuffer_TexelSize.zw, 0);
                 // if (depth < 0) depth = 20;
-                col = lerp(col, lerp(0, 1, saturate(depth/20)), GetEdgeAmount(input.uv));
+                col = lerp(col, lerp(0, LinearToSRGB(unity_FogColor), saturate(depth/20)), GetEdgeAmount(input.uv));
 
                 col = ApplyVignette(col, input.uv, .5, _VignetteParams.x,  _VignetteParams.y, _VignetteParams.z, 0);
 
