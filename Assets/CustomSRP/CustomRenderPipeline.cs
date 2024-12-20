@@ -55,6 +55,29 @@ public class CustomRenderPipeline : RenderPipeline
 			cmd.SetGlobalVector("_AmbientLightColor", RenderSettings.ambientLight);
 		}
 
+		var shadowRt = Shader.PropertyToID("_ShadowBuffer");
+		{
+			cmd.GetTemporaryRT(shadowRt, 1000, 1000,32,FilterMode.Point,RenderTextureFormat.Depth);
+			cmd.SetRenderTarget(shadowRt);
+			// cmd.SetViewport(new Rect(0,0,100,100));
+			var view = Matrix4x4.LookAt(new Vector3(-10,-10,-10), Vector3.zero, Vector3.up);
+			var proj = Matrix4x4.Ortho(-20,20,-20,20,0.1f,100);
+			cmd.SetViewProjectionMatrices(view, proj);
+			cmd.SetGlobalMatrix("_ShadowMatrix", proj * view);
+
+			camera.TryGetCullingParameters(out var cullingParameters);
+			var cullingResults = context.Cull(ref cullingParameters);
+
+			var rendererListDesc = new RendererListDesc(new ShaderTagId("CustomLit"), cullingResults, camera)
+			{
+				sortingCriteria = SortingCriteria.CommonOpaque,
+				renderQueueRange = RenderQueueRange.opaque
+			};
+			cmd.DrawRendererList(context.CreateRendererList(rendererListDesc));
+
+			cmd.SetViewProjectionMatrices(camera.worldToCameraMatrix, camera.projectionMatrix);
+		}
+
 		var rt0 = Shader.PropertyToID("_ColorBuffer");
 		var rt1 = Shader.PropertyToID("_NormalBuffer");
 		var rt2 = Shader.PropertyToID("_DepthBuffer");
