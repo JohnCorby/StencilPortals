@@ -59,24 +59,8 @@ public class CustomRenderPipeline : RenderPipeline
 		var rt1 = Shader.PropertyToID("_NormalBuffer");
 		var rt2 = Shader.PropertyToID("_DepthBuffer");
 		cmd.GetTemporaryRT(rt0, camera.pixelWidth, camera.pixelHeight, 32, FilterMode.Point, GraphicsFormat.R16G16B16A16_SFloat, 8);
-		cmd.GetTemporaryRT(rt1, new RenderTextureDescriptor
-		{
-			width = camera.pixelWidth,
-			height = camera.pixelHeight,
-			msaaSamples = 8,
-			graphicsFormat = GraphicsFormat.R16G16B16A16_SFloat,
-			dimension = TextureDimension.Tex2D,
-			bindMS = true,
-		});
-		cmd.GetTemporaryRT(rt2, new RenderTextureDescriptor
-		{
-			width = camera.pixelWidth,
-			height = camera.pixelHeight,
-			msaaSamples = 8,
-			graphicsFormat = GraphicsFormat.R32_SFloat,
-			dimension = TextureDimension.Tex2D,
-			bindMS = true,
-		});
+		cmd.GetTemporaryRT(rt1, camera.pixelWidth, camera.pixelHeight, 0, FilterMode.Point, GraphicsFormat.R16G16B16A16_SFloat, 8);
+		cmd.GetTemporaryRT(rt2, camera.pixelWidth, camera.pixelHeight, 0, FilterMode.Point, GraphicsFormat.R32_SFloat, 8);
 		cmd.SetRenderTarget(colors: new RenderTargetIdentifier[] { rt0, rt1, rt2 }, depth: rt0);
 
 		cmd.ClearRenderTarget(RTClearFlags.All, new[] { Color.white, Color.white, Color.white });
@@ -101,10 +85,10 @@ public class CustomRenderPipeline : RenderPipeline
 			// TL, TR, BL, BR
 			cmd.SetGlobalVectorArray("_CameraCorners", new Vector4[]
 			{
-				camera.ViewportToWorldPoint(new Vector3(0, 1, camera.farClipPlane)),
-				camera.ViewportToWorldPoint(new Vector3(1, 1, camera.farClipPlane)),
-				camera.ViewportToWorldPoint(new Vector3(0, 0, camera.farClipPlane)),
-				camera.ViewportToWorldPoint(new Vector3(1, 0, camera.farClipPlane)),
+				camera.ViewportToWorldPoint(new Vector3(0,1,camera.farClipPlane)),
+				camera.ViewportToWorldPoint(new Vector3(1,1,camera.farClipPlane)),
+				camera.ViewportToWorldPoint(new Vector3(0,0,camera.farClipPlane)),
+				camera.ViewportToWorldPoint(new Vector3(1,0,camera.farClipPlane)),
 			});
 		}
 

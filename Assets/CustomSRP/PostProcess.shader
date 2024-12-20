@@ -20,7 +20,6 @@
             ZWrite Off
 
             HLSLPROGRAM
-            #pragma target 4.5
             #pragma vertex UnlitPassVertex
             #pragma fragment UnlitPassFragment
 
@@ -30,8 +29,8 @@
 
             sampler2D _ColorBuffer;
             float4 _ColorBuffer_TexelSize;
-            Texture2DMS<float3> _NormalBuffer;
-            Texture2DMS<float> _DepthBuffer;
+            sampler2D _NormalBuffer;
+            sampler2D _DepthBuffer;
 
             sampler3D _Lut;
             sampler2D _RedBlueGradient;
@@ -74,33 +73,34 @@
                 const float alpha = DegToRad(10);
                 const float eps = .1;
 
-                int2 pixel = uv * _ColorBuffer_TexelSize.zw;
-                float3 normal_pixel = _NormalBuffer.Load(pixel, 0);
-                float3 world_position_pixel = GetWorldPos(pixel, _DepthBuffer.Load(pixel, 0));
+                float2 pixel = uv;
 
                 float sum = 0;
                 for (int i = -1; i <= 1; i++)
-                for (int j = -1; j <= 1; j++)
-                for (int sample = 0; sample < 8; sample++)
                 {
-                    int2 n = pixel + int2(i,j);
-
-                    float3 normal_n = _NormalBuffer.Load(n, sample);
-                    float3 world_position_n = GetWorldPos(uv, _DepthBuffer.Load(n, sample));
-
-                    float normalDist = dot(normal_n, normal_pixel);
-                    float planeDistance = abs(dot(normal_pixel, world_position_n - world_position_pixel));
-                    // planeDistance = length(world_position_n - world_position_pixel);
-
-                    if (normalDist < cos(alpha) /*|| planeDistance > eps*/)
+                    for (int j = -1; j <= 1; j++)
                     {
-                        // return 1;
-                        sum++;
+                        float2 n = pixel + float2(i,j)*_ColorBuffer_TexelSize.xy;
+
+                        float3 normal_n = tex2D(_NormalBuffer, n);
+                        float3 normal_pixel = tex2D(_NormalBuffer, pixel);
+                        float3 world_position_n = GetWorldPos(n, tex2D(_DepthBuffer, n));
+                        float3 world_position_pixel = GetWorldPos(pixel, tex2D(_DepthBuffer, pixel));
+
+                        float normalDist = dot(normal_n, normal_pixel);
+                        float planeDistance = abs(dot(normal_pixel, world_position_n - world_position_pixel));
+                        planeDistance = length(world_position_n - world_position_pixel);
+
+                        if (normalDist < cos(alpha) || planeDistance > eps)
+                        {
+                            // return 1;
+                            sum++;
+                        }
                     }
                 }
 
                 // return 0;
-                return sum/(3*3*8)*2;
+                return sum/9;
             }
 
             Varyings UnlitPassVertex(Attributes input)
@@ -113,9 +113,6 @@
 
             float3 UnlitPassFragment(Varyings input) : SV_Target
             {
-                // return _NormalBuffer.Load(input.uv*_ColorBuffer_TexelSize.zw, 0)/10;
-                // return fwidth(GetWorldPos(input.uv, tex2D(_DepthBuffer, input.uv)).z);
-
                 {
                     float2 uv = input.uv;
                     uv.y = 1 - uv.y;
