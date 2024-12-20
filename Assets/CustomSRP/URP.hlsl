@@ -9,3 +9,11 @@ half3 ApplyVignette(half3 input, float2 uv, float2 center, float intensity, floa
     float vfactor = pow(saturate(1.0 - dot(dist, dist)), smoothness);
     return input * lerp(color, (1.0).xxx, vfactor);
 }
+
+
+
+float GetFogAmount(float distance)
+{
+    // factor = (end-z)/(end-start) = z * (-1/(end-start)) + (end/(end-start))
+    return saturate(distance/10);
+}

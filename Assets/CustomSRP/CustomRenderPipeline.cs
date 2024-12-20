@@ -82,7 +82,7 @@ public class CustomRenderPipeline : RenderPipeline
 
 		var rt0 = Shader.PropertyToID("_ColorBuffer");
 		var rt1 = Shader.PropertyToID("_NormalBuffer");
-		var rt2 = Shader.PropertyToID("_DepthBuffer");
+		var rt2 = Shader.PropertyToID("_DistanceBuffer");
 		cmd.GetTemporaryRT(rt0, camera.pixelWidth, camera.pixelHeight, 32, FilterMode.Point, GraphicsFormat.R16G16B16A16_SFloat, 8);
 		cmd.GetTemporaryRT(rt1, new RenderTextureDescriptor
 		{

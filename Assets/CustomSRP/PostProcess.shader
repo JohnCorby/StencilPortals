@@ -31,7 +31,7 @@
             sampler2D _ColorBuffer;
             float4 _ColorBuffer_TexelSize;
             Texture2DMS<float3> _NormalBuffer;
-            Texture2DMS<float> _DepthBuffer;
+            Texture2DMS<float> _DistanceBuffer;
 
             sampler3D _Lut;
             sampler2D _RedBlueGradient;
@@ -75,7 +75,7 @@
 
                 float2 pixel = uv;
                 float3 normal_pixel = _NormalBuffer.Load(pixel*_ColorBuffer_TexelSize.zw, 0);
-                float3 world_position_pixel = GetWorldPos(pixel, _DepthBuffer.Load(pixel*_ColorBuffer_TexelSize.zw, 0));
+                float3 world_position_pixel = GetWorldPos(pixel, _DistanceBuffer.Load(pixel*_ColorBuffer_TexelSize.zw, 0));
 
                 float sum = 0;
                 for (int i = -1; i <= 1; i++)
@@ -87,7 +87,7 @@
                             float2 n = pixel + float2(i,j)*_ColorBuffer_TexelSize.xy;
 
                             float3 normal_n = _NormalBuffer.Load(n*_ColorBuffer_TexelSize.zw, sample);
-                            float3 world_position_n = GetWorldPos(n, _DepthBuffer.Load(n*_ColorBuffer_TexelSize.zw, sample));
+                            float3 world_position_n = GetWorldPos(n, _DistanceBuffer.Load(n*_ColorBuffer_TexelSize.zw, sample));
 
                             float normalDist = dot(normal_n, normal_pixel);
                             float planeDistance = abs(dot(normal_pixel, world_position_n - world_position_pixel));
@@ -132,13 +132,12 @@
 
                 // col *= LinearToSRGB(tex2D(_RedBlueGradient, input.uv.y));
 
-                float depth = 0;
+                float distance = 0;
                 for (int sample = 0; sample < 8; sample++)
-                    depth += _DepthBuffer.Load(input.uv * _ColorBuffer_TexelSize.zw, sample);
-                depth /= 8;
-                // depth = _DepthBuffer.Load(input.uv * _ColorBuffer_TexelSize.zw, 0);
-                // if (depth < 0) depth = 20;
-                col = lerp(col, lerp(0, LinearToSRGB(unity_FogColor), saturate(depth/20)), GetEdgeAmount(input.uv));
+                    distance += _DistanceBuffer.Load(input.uv * _ColorBuffer_TexelSize.zw, sample);
+                distance /= 8;
+                // distance = _DistanceBuffer.Load(input.uv * _ColorBuffer_TexelSize.zw, 0);
+                col = lerp(col, lerp(0, LinearToSRGB(unity_FogColor), GetFogAmount(distance/2)), GetEdgeAmount(input.uv));
 
                 col = ApplyVignette(col, input.uv, .5, _VignetteParams.x,  _VignetteParams.y, _VignetteParams.z, 0);
 
