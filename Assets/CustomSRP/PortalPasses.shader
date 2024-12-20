@@ -68,7 +68,7 @@
                 FragmentOutput output;
                 output.color = 1;
                 output.normal = float3(0,1,0);
-                output.distance = -1;
+                output.distance = 20;
                 output.depth = 0;
                 return output;
             }

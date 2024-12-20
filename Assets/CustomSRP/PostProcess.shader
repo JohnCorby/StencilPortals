@@ -132,14 +132,13 @@
 
                 // col *= LinearToSRGB(tex2D(_RedBlueGradient, input.uv.y));
 
-                /*
                 float depth = 0;
                 for (int sample = 0; sample < 8; sample++)
-                    depth += _DepthBuffer.Load(input.uv * _ColorBuffer_TexelSize.zw, 0);
+                    depth += _DepthBuffer.Load(input.uv * _ColorBuffer_TexelSize.zw, sample);
                 depth /= 8;
-                */
-                float depth = _DepthBuffer.Load(input.uv * _ColorBuffer_TexelSize.zw, 0);
-                col = lerp(col, lerp(0, 1, depth/30), GetEdgeAmount(input.uv));
+                // depth = _DepthBuffer.Load(input.uv * _ColorBuffer_TexelSize.zw, 0);
+                // if (depth < 0) depth = 20;
+                col = lerp(col, lerp(0, 1, saturate(depth/20)), GetEdgeAmount(input.uv));
 
                 col = ApplyVignette(col, input.uv, .5, _VignetteParams.x,  _VignetteParams.y, _VignetteParams.z, 0);
 

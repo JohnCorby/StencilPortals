@@ -75,13 +75,13 @@
 
                 float3 diffuse = saturate(dot(input.normalWS, _DirectionalLightDirection)) * _DirectionalLightColor / PI;
                 float3 ambient = _AmbientLightColor;
-                // output.color = diffuse + ambient;
+                output.color = diffuse + ambient;
 
                 output.normal = input.normalWS;
 
                 output.distance = length(input.positionVS);
 
-                output.color = lerp(output.color, 1, output.distance / 10); // bad and hardcoded
+                output.color = lerp(output.color, 1, saturate(output.distance / 10)); // bad and hardcoded
 
                 return output;
             }

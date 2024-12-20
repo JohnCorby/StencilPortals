@@ -104,7 +104,7 @@ public class CustomRenderPipeline : RenderPipeline
 		});
 		cmd.SetRenderTarget(colors: new RenderTargetIdentifier[] { rt0, rt1, rt2 }, depth: rt0);
 
-		cmd.ClearRenderTarget(RTClearFlags.All, new[] { Color.white, new Color(0,1,0,0), new Color(-1,0,0,0) });
+		cmd.ClearRenderTarget(RTClearFlags.All, new[] { Color.white, new Color(0,1,0,0), new Color(20,0,0,0) });
 
 		var rc = new RenderContext
 		{
