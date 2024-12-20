@@ -29,8 +29,8 @@
 
             sampler2D _ColorBuffer;
             float4 _ColorBuffer_TexelSize;
-            sampler2D _NormalBuffer;
-            sampler2D _DepthBuffer;
+            Texture2D<float3> _NormalBuffer;
+            Texture2D<float> _DepthBuffer;
 
             sampler3D _Lut;
             sampler2D _RedBlueGradient;
@@ -74,8 +74,8 @@
                 const float eps = .1;
 
                 float2 pixel = uv;
-                float3 normal_pixel = tex2D(_NormalBuffer, pixel);
-                float3 world_position_pixel = GetWorldPos(pixel, tex2D(_DepthBuffer, pixel));
+                float3 normal_pixel = _NormalBuffer.Load(int3(pixel*_ColorBuffer_TexelSize.zw, 0));
+                float3 world_position_pixel = GetWorldPos(pixel, _DepthBuffer.Load(int3(pixel*_ColorBuffer_TexelSize.zw, 0)));
 
                 float sum = 0;
                 for (int i = -1; i <= 1; i++)
@@ -84,8 +84,8 @@
                     {
                         float2 n = pixel + float2(i,j)*_ColorBuffer_TexelSize.xy;
 
-                        float3 normal_n = tex2D(_NormalBuffer, n);
-                        float3 world_position_n = GetWorldPos(n, tex2D(_DepthBuffer, n));
+                        float3 normal_n = _NormalBuffer.Load(int3(n*_ColorBuffer_TexelSize.zw, 0));
+                        float3 world_position_n = GetWorldPos(n, _DepthBuffer.Load(int3(n*_ColorBuffer_TexelSize.zw, 0)));
 
                         float normalDist = dot(normal_n, normal_pixel);
                         float planeDistance = abs(dot(normal_pixel, world_position_n - world_position_pixel));
