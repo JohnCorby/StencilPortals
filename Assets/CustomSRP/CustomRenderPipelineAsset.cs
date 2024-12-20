@@ -8,6 +8,7 @@ public class CustomRenderPipelineAsset : RenderPipelineAsset<CustomRenderPipelin
 	[Range(0, 10)]
 	public int MaxDepth = 1;
 	public Material PostProcessMaterial;
+	public float FogColorMultipler = 1;
 
 	protected override RenderPipeline CreatePipeline()
 	{

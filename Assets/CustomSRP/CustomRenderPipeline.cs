@@ -41,6 +41,8 @@ public class CustomRenderPipeline : RenderPipeline
 
 	private void RenderCamera(ScriptableRenderContext context, Camera camera)
 	{
+		RenderSettings.fogColor *= _asset.FogColorMultipler;
+
 		// apparently we only need to do this once and not per portal
 		context.SetupCameraProperties(camera);
 
@@ -147,6 +149,8 @@ public class CustomRenderPipeline : RenderPipeline
 
 		// orientation gizmo breaks unless we do this
 		camera.ResetProjectionMatrix();
+
+		RenderSettings.fogColor /= _asset.FogColorMultipler;
 	}
 
 	/// <summary>
