@@ -74,6 +74,8 @@
                 const float eps = .1;
 
                 float2 pixel = uv;
+                float3 normal_pixel = tex2D(_NormalBuffer, pixel);
+                float3 world_position_pixel = GetWorldPos(pixel, tex2D(_DepthBuffer, pixel));
 
                 float sum = 0;
                 for (int i = -1; i <= 1; i++)
@@ -83,13 +85,10 @@
                         float2 n = pixel + float2(i,j)*_ColorBuffer_TexelSize.xy;
 
                         float3 normal_n = tex2D(_NormalBuffer, n);
-                        float3 normal_pixel = tex2D(_NormalBuffer, pixel);
                         float3 world_position_n = GetWorldPos(n, tex2D(_DepthBuffer, n));
-                        float3 world_position_pixel = GetWorldPos(pixel, tex2D(_DepthBuffer, pixel));
 
                         float normalDist = dot(normal_n, normal_pixel);
                         float planeDistance = abs(dot(normal_pixel, world_position_n - world_position_pixel));
-                        planeDistance = length(world_position_n - world_position_pixel);
 
                         if (normalDist < cos(alpha) || planeDistance > eps)
                         {
@@ -100,7 +99,7 @@
                 }
 
                 // return 0;
-                return sum/9;
+                return sum/(3*3);
             }
 
             Varyings UnlitPassVertex(Attributes input)

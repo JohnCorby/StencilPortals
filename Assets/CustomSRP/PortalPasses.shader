@@ -52,8 +52,8 @@
             struct FragmentOutput
             {
                 float3 color : SV_Target0;
-                float3 normalVS : SV_Target1;
-                float customDepth : SV_Target2;
+                float3 normal : SV_Target1;
+                float distance : SV_Target2;
                 float depth : SV_Depth;
             };
 
@@ -67,8 +67,9 @@
                 // read stencil, write targets and depth
                 FragmentOutput output;
                 output.color = 1;
-                output.normalVS = 1;
-                output.customDepth = 1;
+                // TODO: make these better
+                output.normal = 1;
+                output.distance = 1;
                 output.depth = 0;
                 return output;
             }

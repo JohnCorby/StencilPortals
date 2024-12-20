@@ -37,8 +37,8 @@
             struct FragmentOutput
             {
                 float3 color : SV_Target0;
-                float3 normalVS : SV_Target1;
-                float customDepth : SV_Target2;
+                float3 normal : SV_Target1;
+                float distance : SV_Target2;
             };
 
             Varyings LitPassVertex(Attributes input)
@@ -61,9 +61,9 @@
                 float3 ambient = _AmbientLightColor;
                 output.color = diffuse + ambient;
 
-                output.normalVS = TransformWorldToViewNormal(input.normalWS, true);
+                output.normal = input.normalWS;
 
-                output.customDepth = length(input.positionVS); // use distance from camera instead of depth
+                output.distance = length(input.positionVS);
 
                 return output;
             }
