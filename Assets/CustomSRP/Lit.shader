@@ -65,6 +65,8 @@
 
                 output.distance = length(input.positionVS);
 
+                output.color = lerp(output.color, 1, output.distance/10); // bad and hardcoded
+
                 return output;
             }
             ENDHLSL

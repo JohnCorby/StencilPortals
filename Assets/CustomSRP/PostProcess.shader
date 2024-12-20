@@ -68,8 +68,7 @@
                 return normalize(ray) * distance;
             }
 
-            // for now its the bad algorithm
-            float Edge(float2 uv)
+            float GetEdgeAmount(float2 uv)
             {
                 const float alpha = DegToRad(15);
                 const float eps = 1.0/15;
@@ -103,7 +102,7 @@
                 }
 
                 // return 0;
-                return sum/(3*3*8)*2;
+                return saturate(sum/(3*3*8)*2);
             }
 
             Varyings UnlitPassVertex(Attributes input)
@@ -133,7 +132,14 @@
 
                 // col *= LinearToSRGB(tex2D(_RedBlueGradient, input.uv.y));
 
-                col *= 1-Edge(input.uv);
+                /*
+                float depth = 0;
+                for (int sample = 0; sample < 8; sample++)
+                    depth += _DepthBuffer.Load(input.uv * _ColorBuffer_TexelSize.zw, 0);
+                depth /= 8;
+                */
+                float depth = _DepthBuffer.Load(input.uv * _ColorBuffer_TexelSize.zw, 0);
+                col = lerp(col, lerp(0, 1, depth/30), GetEdgeAmount(input.uv));
 
                 col = ApplyVignette(col, input.uv, .5, _VignetteParams.x,  _VignetteParams.y, _VignetteParams.z, 0);
 
