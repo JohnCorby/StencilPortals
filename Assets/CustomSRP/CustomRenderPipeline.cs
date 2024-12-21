@@ -392,6 +392,10 @@ public class CustomRenderPipeline : RenderPipeline
 
 	private void DrawShadows(RenderContext rc, CullingResults cullingResults)
 	{
+		const int lightIndex = 0;
+
+		if (!cullingResults.GetShadowCasterBounds(lightIndex, out _)) return;
+
 		var sampleName = $"draw shadows";
 		rc.cmd.BeginSample(sampleName);
 
@@ -402,9 +406,9 @@ public class CustomRenderPipeline : RenderPipeline
 		rc.cmd.SetRenderTarget(shadowRt);
 		rc.cmd.ClearRenderTarget(RTClearFlags.All, Color.clear);
 
-		var shadowSettings = new ShadowDrawingSettings(cullingResults, 0, BatchCullingProjectionType.Orthographic);
+		var shadowSettings = new ShadowDrawingSettings(cullingResults, lightIndex, BatchCullingProjectionType.Orthographic);
 		cullingResults.ComputeDirectionalShadowMatricesAndCullingPrimitives(
-			0, 0, 1, Vector3.zero, atlasSize, 0,
+			lightIndex, 0, 1, Vector3.zero, atlasSize, 0,
 			out var view, out var proj, out var splitData
 		);
 		shadowSettings.splitData = splitData;
