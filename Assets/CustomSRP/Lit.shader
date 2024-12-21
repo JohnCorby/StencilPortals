@@ -3,6 +3,10 @@
     Properties {}
     SubShader
     {
+        HLSLINCLUDE
+        #include "Common.hlsl"
+        ENDHLSL
+
         Pass
         {
             Tags
@@ -14,8 +18,6 @@
             #pragma vertex LitPassVertex
             #pragma fragment LitPassFragment
 
-            #include "Common.hlsl"
-            #include "URP.hlsl"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
 
             float3 _DirectionalLightColor;
@@ -74,7 +76,8 @@
                     output.color = closestDepth.xxx;
                 }
 
-                float3 diffuse = saturate(dot(input.normalWS, _DirectionalLightDirection)) * _DirectionalLightColor / PI;
+                float3 diffuse = saturate(dot(input.normalWS, _DirectionalLightDirection)) * _DirectionalLightColor /
+                    PI;
                 float3 ambient = _AmbientLightColor;
                 output.color = diffuse + ambient;
 
@@ -85,6 +88,29 @@
                 output.color = lerp(output.color, LinearToSRGB(unity_FogColor), GetFogAmount(output.distance, false));
 
                 return output;
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Tags
+            {
+                "LightMode" = "ShadowCaster"
+            }
+
+            HLSLPROGRAM
+            #pragma vertex UnlitPassVertex
+            #pragma fragment UnlitPassFragment
+
+            float4 UnlitPassVertex(float4 positionOS : POSITION) : SV_POSITION
+            {
+                return TransformObjectToHClip(positionOS);
+            }
+
+            void UnlitPassFragment()
+            {
+                // write depth
             }
             ENDHLSL
         }

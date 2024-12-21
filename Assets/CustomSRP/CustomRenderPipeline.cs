@@ -62,27 +62,17 @@ public class CustomRenderPipeline : RenderPipeline
 			cmd.SetGlobalVector("_DirectionalLightDirection", -light.transform.forward);
 		}
 
-		var shadowRt = Shader.PropertyToID("_ShadowBuffer");
+		// temp
 		{
-			cmd.GetTemporaryRT(shadowRt, 1000, 1000,32,FilterMode.Point,RenderTextureFormat.Depth);
-			cmd.SetRenderTarget(shadowRt);
-			// cmd.SetViewport(new Rect(0,0,100,100));
-			var view = Matrix4x4.LookAt(new Vector3(-10,-10,-10), Vector3.zero, Vector3.up);
-			var proj = Matrix4x4.Ortho(-20,20,-20,20,0.1f,100);
-			cmd.SetViewProjectionMatrices(view, proj);
-			cmd.SetGlobalMatrix("_ShadowMatrix", proj * view);
-
 			camera.TryGetCullingParameters(out var cullingParameters);
+			cullingParameters.shadowDistance = 100;
 			var cullingResults = context.Cull(ref cullingParameters);
-
-			var rendererListDesc = new RendererListDesc(new ShaderTagId("CustomLit"), cullingResults, camera)
+			DrawShadows(new RenderContext
 			{
-				sortingCriteria = SortingCriteria.CommonOpaque,
-				renderQueueRange = RenderQueueRange.opaque
-			};
-			cmd.DrawRendererList(context.CreateRendererList(rendererListDesc));
-
-			cmd.SetViewProjectionMatrices(camera.worldToCameraMatrix, camera.projectionMatrix);
+				cmd = cmd,
+				ctx = context,
+				cam = camera,
+			}, cullingResults);
 		}
 
 		var rt0 = Shader.PropertyToID("_ColorBuffer");
@@ -111,7 +101,7 @@ public class CustomRenderPipeline : RenderPipeline
 		});
 		cmd.SetRenderTarget(colors: new RenderTargetIdentifier[] { rt0, rt1, rt2 }, depth: rt0);
 
-		cmd.ClearRenderTarget(RTClearFlags.All, new[] { RenderSettings.fogColor, new Color(0,1,0,0), new Color(RenderSettings.fogEndDistance * 2,0,0,0) });
+		cmd.ClearRenderTarget(RTClearFlags.All, new[] { RenderSettings.fogColor, new Color(0, 1, 0, 0), new Color(RenderSettings.fogEndDistance * 2, 0, 0, 0) });
 
 		var rc = new RenderContext
 		{
@@ -121,6 +111,8 @@ public class CustomRenderPipeline : RenderPipeline
 			viewport = new Rect(0, 0, camera.pixelWidth, camera.pixelHeight)
 		};
 		RenderPortal(rc, null, 0);
+
+		cmd.ReleaseTemporaryRT(Shader.PropertyToID("_ShadowBuffer"));
 
 		// cant render this per portal, it doesnt move for some reason
 		if (Handles.ShouldRenderGizmos())
@@ -133,10 +125,10 @@ public class CustomRenderPipeline : RenderPipeline
 			// TL, TR, BL, BR
 			cmd.SetGlobalVectorArray("_CameraCorners", new Vector4[]
 			{
-				camera.ViewportToWorldPoint(new Vector3(0,1,camera.farClipPlane)),
-				camera.ViewportToWorldPoint(new Vector3(1,1,camera.farClipPlane)),
-				camera.ViewportToWorldPoint(new Vector3(0,0,camera.farClipPlane)),
-				camera.ViewportToWorldPoint(new Vector3(1,0,camera.farClipPlane)),
+				camera.ViewportToWorldPoint(new Vector3(0, 1, camera.farClipPlane)),
+				camera.ViewportToWorldPoint(new Vector3(1, 1, camera.farClipPlane)),
+				camera.ViewportToWorldPoint(new Vector3(0, 0, camera.farClipPlane)),
+				camera.ViewportToWorldPoint(new Vector3(1, 0, camera.farClipPlane)),
 			});
 		}
 
@@ -394,6 +386,35 @@ public class CustomRenderPipeline : RenderPipeline
 			}
 		};
 		rc.cmd.DrawRendererList(rc.ctx.CreateRendererList(rendererListDesc));
+
+		rc.cmd.EndSample(sampleName);
+	}
+
+	private void DrawShadows(RenderContext rc, CullingResults cullingResults)
+	{
+		var sampleName = $"draw shadows";
+		rc.cmd.BeginSample(sampleName);
+
+		var shadowRt = Shader.PropertyToID("_ShadowBuffer");
+
+		const int atlasSize = 1024;
+		rc.cmd.GetTemporaryRT(shadowRt, atlasSize, atlasSize, 32, FilterMode.Bilinear, RenderTextureFormat.Shadowmap);
+		rc.cmd.SetRenderTarget(shadowRt);
+		rc.cmd.ClearRenderTarget(RTClearFlags.All, Color.clear);
+
+		var shadowSettings = new ShadowDrawingSettings(cullingResults, 0, BatchCullingProjectionType.Orthographic);
+		cullingResults.ComputeDirectionalShadowMatricesAndCullingPrimitives(
+			0, 0, 1, Vector3.zero, atlasSize, 0,
+			out var view, out var proj, out var splitData
+		);
+		shadowSettings.splitData = splitData;
+
+		rc.cmd.SetViewProjectionMatrices(view, proj);
+		rc.cmd.SetGlobalMatrix("_ShadowMatrix", proj * view);
+
+		rc.cmd.DrawRendererList(rc.ctx.CreateShadowRendererList(ref shadowSettings));
+
+		rc.cmd.SetViewProjectionMatrices(rc.cam.worldToCameraMatrix, rc.cam.projectionMatrix);
 
 		rc.cmd.EndSample(sampleName);
 	}
