@@ -112,6 +112,7 @@ public class CustomRenderPipeline : RenderPipeline
 		};
 		RenderPortal(rc, null, 0);
 
+		// temp
 		cmd.ReleaseTemporaryRT(Shader.PropertyToID("_ShadowBuffer"));
 
 		// cant render this per portal, it doesnt move for some reason
@@ -413,7 +414,17 @@ public class CustomRenderPipeline : RenderPipeline
 		);
 		shadowSettings.splitData = splitData;
 
-		rc.cmd.SetGlobalMatrix("_ShadowMatrix", proj * view);
+		{
+			var m = proj * view;
+			if (SystemInfo.usesReversedZBuffer)
+			{
+				m.m20 = -m.m20;
+				m.m21 = -m.m21;
+				m.m22 = -m.m22;
+				m.m23 = -m.m23;
+			}
+			rc.cmd.SetGlobalMatrix("_ShadowMatrix", m);
+		}
 		rc.cmd.SetViewProjectionMatrices(view, proj);
 
 		rc.cmd.DrawRendererList(rc.ctx.CreateShadowRendererList(ref shadowSettings));

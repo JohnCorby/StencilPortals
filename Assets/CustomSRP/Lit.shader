@@ -59,6 +59,7 @@
                 float3 positionWS = TransformObjectToWorld(input.positionOS);
                 output.positionVS = TransformWorldToView(positionWS);
                 output.positionLightSpace = mul(_ShadowMatrix, float4(positionWS, 1));
+                // output.positionCS = mul(_ShadowMatrix, float4(positionWS, 1));;
                 return output;
             }
 
