@@ -55,5 +55,11 @@ public class Portal : MonoBehaviour
 			}
 		}
 	}
+
+	[MenuItem("Portals/Screenshot")]
+	public static void Screenshot()
+	{
+		ScreenCapture.CaptureScreenshot("cool image.png");
+	}
 #endif
 }

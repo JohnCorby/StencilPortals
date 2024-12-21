@@ -402,7 +402,7 @@ public class CustomRenderPipeline : RenderPipeline
 
 		var shadowRt = Shader.PropertyToID("_ShadowBuffer");
 
-		const int atlasSize = 1024;
+		const int atlasSize = 4096;
 		rc.cmd.GetTemporaryRT(shadowRt, atlasSize, atlasSize, 32, FilterMode.Bilinear, RenderTextureFormat.Shadowmap);
 		rc.cmd.SetRenderTarget(shadowRt);
 		rc.cmd.ClearRenderTarget(RTClearFlags.All, Color.clear);
