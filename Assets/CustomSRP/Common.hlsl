@@ -13,8 +13,10 @@
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
 
+// start, end, edge start, edge end
+float4 _FogParams;
 
 float GetFogAmount(float distance, bool edge)
 {
-    return saturate(distance / (edge ? 20 : 10));
+    return saturate(Remap(edge ? _FogParams.z : _FogParams.x, edge ? _FogParams.w : _FogParams.y, 0, 1, distance));
 }

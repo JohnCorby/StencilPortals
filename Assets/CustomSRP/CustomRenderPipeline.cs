@@ -51,10 +51,15 @@ public class CustomRenderPipeline : RenderPipeline
 		cmd.BeginSample(sampleName);
 
 		{
+			cmd.SetGlobalVector("_FogParams", new Vector4(
+				RenderSettings.fogStartDistance, RenderSettings.fogEndDistance,
+				RenderSettings.fogStartDistance, RenderSettings.fogEndDistance * 2
+			));
+			cmd.SetGlobalVector("_AmbientLightColor", RenderSettings.ambientLight);
+
 			var light = RenderSettings.sun;
 			cmd.SetGlobalVector("_DirectionalLightColor", light.color * light.intensity);
 			cmd.SetGlobalVector("_DirectionalLightDirection", -light.transform.forward);
-			cmd.SetGlobalVector("_AmbientLightColor", RenderSettings.ambientLight);
 		}
 
 		var shadowRt = Shader.PropertyToID("_ShadowBuffer");
@@ -106,7 +111,7 @@ public class CustomRenderPipeline : RenderPipeline
 		});
 		cmd.SetRenderTarget(colors: new RenderTargetIdentifier[] { rt0, rt1, rt2 }, depth: rt0);
 
-		cmd.ClearRenderTarget(RTClearFlags.All, new[] { RenderSettings.fogColor, new Color(0,1,0,0), new Color(20,0,0,0) });
+		cmd.ClearRenderTarget(RTClearFlags.All, new[] { RenderSettings.fogColor, new Color(0,1,0,0), new Color(RenderSettings.fogEndDistance * 2,0,0,0) });
 
 		var rc = new RenderContext
 		{
