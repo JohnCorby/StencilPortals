@@ -407,9 +407,10 @@ public class CustomRenderPipeline : RenderPipeline
 		rc.cmd.SetRenderTarget(shadowRt);
 		rc.cmd.ClearRenderTarget(RTClearFlags.All, Color.clear);
 
+		var light = RenderSettings.sun;
 		var shadowSettings = new ShadowDrawingSettings(cullingResults, lightIndex, BatchCullingProjectionType.Orthographic);
 		cullingResults.ComputeDirectionalShadowMatricesAndCullingPrimitives(
-			lightIndex, 0, 1, Vector3.zero, atlasSize, 0,
+			lightIndex, 0, 1, Vector3.zero, atlasSize, light.shadowNearPlane,
 			out var view, out var proj, out var splitData
 		);
 		shadowSettings.splitData = splitData;
@@ -427,7 +428,9 @@ public class CustomRenderPipeline : RenderPipeline
 		}
 		rc.cmd.SetViewProjectionMatrices(view, proj);
 
+		rc.cmd.SetGlobalDepthBias(0, light.shadowBias); // doesnt seem to do anything :(
 		rc.cmd.DrawRendererList(rc.ctx.CreateShadowRendererList(ref shadowSettings));
+		rc.cmd.SetGlobalDepthBias(0, 0);
 
 		rc.cmd.SetViewProjectionMatrices(rc.cam.worldToCameraMatrix, rc.cam.projectionMatrix);
 
