@@ -24,7 +24,10 @@
             float3 _DirectionalLightDirection;
             float3 _AmbientLightColor;
 
-            sampler2D _ShadowBuffer;
+            // sampler2D _ShadowBuffer;
+            TEXTURE2D_SHADOW(_ShadowBuffer);
+            #define SHADOW_SAMPLER sampler_linear_clamp_compare
+            SAMPLER_CMP(SHADOW_SAMPLER);
             float4x4 _ShadowMatrix;
 
             struct Attributes
@@ -37,8 +40,8 @@
             {
                 float4 positionCS : SV_POSITION;
                 float3 normalWS : normalWS;
-                float3 positionVS : positionWS;
-                float4 positionLightSpace : positionLightSpace;
+                float3 positionVS : positionVS;
+                float3 positionLightSpace : positionLightSpace;
             };
 
             struct FragmentOutput
@@ -53,8 +56,9 @@
                 Varyings output;
                 output.positionCS = TransformObjectToHClip(input.positionOS);
                 output.normalWS = TransformObjectToWorldNormal(input.normalOS, true);
-                output.positionVS = TransformWorldToView(TransformObjectToWorld(input.positionOS));
-                output.positionLightSpace = mul(_ShadowMatrix, float4(input.positionOS, 1));
+                float3 positionWS = TransformObjectToWorld(input.positionOS);
+                output.positionVS = TransformWorldToView(positionWS);
+                output.positionLightSpace = mul(_ShadowMatrix, float4(positionWS, 1));
                 return output;
             }
 
@@ -65,21 +69,26 @@
                 // float3 ramp = saturate(dot(input.normalWS, _DirectionalLightDirection) * .5 + .5) * _DirectionalLightColor;
                 // return ramp;
 
+                bool shadow;
                 {
-                    float3 projCoords = input.positionLightSpace.xyz / input.positionLightSpace.w;
+                    float3 projCoords = input.positionLightSpace.xyz;
                     projCoords = projCoords * 0.5 + 0.5;
 
-                    float bias = 0.002;
-                    projCoords.z -= bias;
+                    // float bias = 0.002;
+                    // projCoords.z -= bias;
 
-                    float closestDepth = tex2D(_ShadowBuffer, projCoords.xy);
-                    output.color = closestDepth.xxx;
+                    // float closestDepth = tex2D(_ShadowBuffer, projCoords.xy);
+                    // float currentDepth = input.positionCS.z;
+                    // shadow = currentDepth > closestDepth;
+                    shadow = SAMPLE_TEXTURE2D_SHADOW(_ShadowBuffer, SHADOW_SAMPLER, projCoords);
+
+                    // output.color = float3(currentDepth, closestDepth, shadow);
+                    // output.color = shadow;
                 }
 
-                float3 diffuse = saturate(dot(input.normalWS, _DirectionalLightDirection)) * _DirectionalLightColor /
-                    PI;
+                float3 diffuse = saturate(dot(input.normalWS, _DirectionalLightDirection) * shadow) * _DirectionalLightColor / PI;
                 float3 ambient = _AmbientLightColor;
-                output.color = diffuse + ambient;
+                output.color = diffuse * shadow + ambient;
 
                 output.normal = input.normalWS;
 

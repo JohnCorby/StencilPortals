@@ -65,7 +65,7 @@ public class CustomRenderPipeline : RenderPipeline
 		// temp
 		{
 			camera.TryGetCullingParameters(out var cullingParameters);
-			cullingParameters.shadowDistance = 100;
+			cullingParameters.shadowDistance = 10;
 			var cullingResults = context.Cull(ref cullingParameters);
 			DrawShadows(new RenderContext
 			{
@@ -413,8 +413,8 @@ public class CustomRenderPipeline : RenderPipeline
 		);
 		shadowSettings.splitData = splitData;
 
-		rc.cmd.SetViewProjectionMatrices(view, proj);
 		rc.cmd.SetGlobalMatrix("_ShadowMatrix", proj * view);
+		rc.cmd.SetViewProjectionMatrices(view, proj);
 
 		rc.cmd.DrawRendererList(rc.ctx.CreateShadowRendererList(ref shadowSettings));
 
