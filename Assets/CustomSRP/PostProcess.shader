@@ -78,16 +78,16 @@
                 float3 world_position_pixel = GetWorldPos(pixel, _DistanceBuffer.Load(pixel * _ColorBuffer_TexelSize.zw, 0));
 
                 const int NUM_SAMPLES = 8;
-                const int NUM_OFFSETS = 8;
+                const int NUM_OFFSETS = 4;
                 const int2 offsets[NUM_OFFSETS] = {
                     int2(0, 1),
                     int2(0, -1),
                     int2(1, 0),
                     int2(-1, 0),
-                    int2(-1, -1),
-                    int2(1, 1),
-                    int2(-1, 1),
-                    int2(1, -1),
+                    // int2(-1, -1),
+                    // int2(1, 1),
+                    // int2(-1, 1),
+                    // int2(1, -1),
                 };
 
                 float sum = 0;
@@ -147,10 +147,11 @@
                 // col *= LinearToSRGB(tex2D(_RedBlueGradient, input.uv.y));
 
                 {
+                    const int NUM_SAMPLES = 8;
                     float distance = 0;
-                    for (int sample = 0; sample < 8; sample++)
+                    for (int sample = 0; sample < NUM_SAMPLES; sample++)
                         distance += _DistanceBuffer.Load(input.uv * _ColorBuffer_TexelSize.zw, sample);
-                    distance /= 8;
+                    distance /= NUM_SAMPLES;
                     // distance = _DistanceBuffer.Load(input.uv * _ColorBuffer_TexelSize.zw, 0);
                     col = lerp(col, lerp(0, LinearToSRGB(unity_FogColor), GetFogAmount(distance, true)), GetEdgeAmount(input.uv));
                 }
