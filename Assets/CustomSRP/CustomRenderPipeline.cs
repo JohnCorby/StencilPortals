@@ -37,8 +37,6 @@ public class CustomRenderPipeline : RenderPipeline
 
 	private void RenderCamera(ScriptableRenderContext context, Camera camera)
 	{
-		// RenderSettings.fogColor *= _asset.FogColorMultipler;
-
 		// apparently we only need to do this once and not per portal
 		context.SetupCameraProperties(camera);
 
@@ -51,6 +49,7 @@ public class CustomRenderPipeline : RenderPipeline
 				RenderSettings.fogStartDistance, RenderSettings.fogEndDistance,
 				RenderSettings.fogStartDistance, RenderSettings.fogEndDistance * 2
 			));
+			cmd.SetGlobalColor("_FogColor", RenderSettings.fogColor * _asset.FogColorMultipler);
 			cmd.SetGlobalVector("_AmbientLightColor", RenderSettings.ambientLight);
 
 			var light = RenderSettings.sun;
@@ -97,7 +96,7 @@ public class CustomRenderPipeline : RenderPipeline
 		});
 		cmd.SetRenderTarget(colors: new RenderTargetIdentifier[] { rt0, rt1, rt2 }, depth: rt0);
 
-		cmd.ClearRenderTarget(RTClearFlags.All, new[] { RenderSettings.fogColor, new Color(0, 1, 0, 0), new Color(RenderSettings.fogEndDistance * 2, 0, 0, 0) });
+		cmd.ClearRenderTarget(RTClearFlags.All, new[] { RenderSettings.fogColor * _asset.FogColorMultipler, new Color(0, 1, 0, 0), new Color(RenderSettings.fogEndDistance * 2, 0, 0, 0) });
 
 		var rc = new RenderContext
 		{
@@ -143,8 +142,6 @@ public class CustomRenderPipeline : RenderPipeline
 
 		// orientation gizmo breaks unless we do this
 		camera.ResetProjectionMatrix();
-
-		// RenderSettings.fogColor /= _asset.FogColorMultipler;
 	}
 
 	/// <summary>

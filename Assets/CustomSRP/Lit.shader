@@ -95,7 +95,7 @@
 
                 output.distance = length(input.positionVS);
 
-                output.color = lerp(output.color, LinearToSRGB(unity_FogColor), GetFogAmount(output.distance, false));
+                output.color = lerp(output.color, _FogColor, GetFogAmount(output.distance, false));
 
                 return output;
             }

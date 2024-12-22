@@ -13,6 +13,7 @@
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
 
+float3 _FogColor;
 // start, end, edge start, edge end
 float4 _FogParams;
 
