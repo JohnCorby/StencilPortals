@@ -69,7 +69,7 @@
                 // read stencil, write targets and depth
                 FragmentOutput output;
                 output.color = LinearToSRGB(unity_FogColor);
-                output.normal = float3(0,1,0);
+                output.normal = float3(0, 1, 0);
                 output.distance = _FogParams.w;
                 output.depth = 0;
                 return output;
