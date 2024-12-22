@@ -7,7 +7,7 @@ using UnityEngine;
 [RequireComponent(typeof(Renderer))]
 public class Portal : MonoBehaviour
 {
-	public static Portal[] AllPortals { get; private set; }
+	public static List<Portal> AllPortals { get; private set; }
 
 	/// <summary>
 	/// PVS of portals this portal can see
@@ -17,45 +17,28 @@ public class Portal : MonoBehaviour
 	public Renderer Renderer { get; private set; }
 	public Portal LinkedPortal;
 
-	private void Awake()
+	private void OnEnable()
 	{
-		Renderer = GetComponent<Renderer>();
+		if (AllPortals == null) AllPortals = new();
+		AllPortals.Add(this);
+		if (Renderer == null) Renderer = GetComponent<Renderer>();
 
-		if (AllPortals == null) AllPortals = FindObjectsByType<Portal>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+		// just rebuild for now
 		InnerPortals = AllPortals.ToList();
 		InnerPortals.Remove(LinkedPortal);
+	}
 
-		Debug.Log($"inner portals = {string.Join(",", InnerPortals)}", this);
+	private void OnDisable()
+	{
+		if (AllPortals == null) AllPortals = new();
+		AllPortals.Remove(this);
+
+		// just rebuild for now
+		InnerPortals = AllPortals.ToList();
+		InnerPortals.Remove(LinkedPortal);
 	}
 
 #if UNITY_EDITOR
-	[MenuItem("Portals/DEBUG Rebuild")]
-	public static void DEBUG_Rebuild()
-	{
-		AllPortals = FindObjectsByType<Portal>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
-		foreach (var portal in AllPortals)
-		{
-			portal.Renderer = portal.GetComponent<Renderer>();
-			portal.InnerPortals = AllPortals.ToList();
-			portal.InnerPortals.Remove(portal.LinkedPortal);
-		}
-	}
-
-	// stupid and should be removed at some point
-	public static void HACK_Validate()
-	{
-		if (AllPortals == null) AllPortals = FindObjectsByType<Portal>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
-		foreach (var portal in AllPortals)
-		{
-			if (!portal.Renderer) portal.Renderer = portal.GetComponent<Renderer>();
-			if (portal.InnerPortals == null)
-			{
-				portal.InnerPortals = AllPortals.ToList();
-				portal.InnerPortals.Remove(portal.LinkedPortal);
-			}
-		}
-	}
-
 	[MenuItem("Portals/Screenshot")]
 	public static void Screenshot()
 	{
