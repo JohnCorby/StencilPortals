@@ -12,7 +12,7 @@ public class Portal : MonoBehaviour
 	/// <summary>
 	/// PVS of portals this portal can see
 	/// </summary>
-	public List<Portal> InnerPortals { get; private set; }
+	public List<Portal> InnerPortals => AllPortals;
 
 	public Renderer Renderer { get; private set; }
 	public Portal LinkedPortal;
@@ -22,20 +22,12 @@ public class Portal : MonoBehaviour
 		if (AllPortals == null) AllPortals = new();
 		AllPortals.Add(this);
 		if (Renderer == null) Renderer = GetComponent<Renderer>();
-
-		// just rebuild for now
-		InnerPortals = AllPortals.ToList();
-		InnerPortals.Remove(LinkedPortal);
 	}
 
 	private void OnDisable()
 	{
 		if (AllPortals == null) AllPortals = new();
 		AllPortals.Remove(this);
-
-		// just rebuild for now
-		InnerPortals = AllPortals.ToList();
-		InnerPortals.Remove(LinkedPortal);
 	}
 
 #if UNITY_EDITOR
