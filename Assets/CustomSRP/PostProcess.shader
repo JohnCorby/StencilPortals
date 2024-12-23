@@ -68,14 +68,16 @@
                 return normalize(ray) * distance;
             }
 
-            float GetEdgeAmount(float2 uv)
+            // return: edge amount, min distance
+            float2 GetEdgeData(float2 uv)
             {
                 const float alpha = DegToRad(15);
                 const float eps = 1.0 / 15;
 
                 float2 pixel = uv;
                 float3 normal_pixel = _NormalBuffer.Load(pixel * _ColorBuffer_TexelSize.zw, 0);
-                float3 world_position_pixel = GetWorldPos(pixel, _DistanceBuffer.Load(pixel * _ColorBuffer_TexelSize.zw, 0));
+                float distance_pixel = _DistanceBuffer.Load(pixel * _ColorBuffer_TexelSize.zw, 0);
+                float3 world_position_pixel = GetWorldPos(pixel, distance_pixel);
 
                 const int NUM_SAMPLES = 8;
                 const int NUM_OFFSETS = 4;
@@ -90,29 +92,36 @@
                     // int2(1, -1),
                 };
 
-                float sum = 0;
+                float edgeMean = 0;
+                float minDistance = 99999;
                 for (int i = 0; i < NUM_OFFSETS; i++)
                 {
                     float2 n = pixel + offsets[i] * _ColorBuffer_TexelSize.xy;
 
+                    float distanceMean = 0;
                     for (int sample = 0; sample < NUM_SAMPLES; sample++)
                     {
                         float3 normal_n = _NormalBuffer.Load(n * _ColorBuffer_TexelSize.zw, sample);
-                        float3 world_position_n = GetWorldPos(n, _DistanceBuffer.Load(n * _ColorBuffer_TexelSize.zw, sample));
+                        float distance_n = _DistanceBuffer.Load(n * _ColorBuffer_TexelSize.zw, sample);
+                        float3 world_position_n = GetWorldPos(n, distance_n);
 
                         float normalDist = dot(normal_n, normal_pixel);
                         float planeDistance = abs(dot(normal_pixel, world_position_n - world_position_pixel));
 
                         if (normalDist < cos(alpha) || planeDistance > eps)
                         {
-                            // return 1;
-                            sum++;
+                            edgeMean++;
                         }
+
+                        distanceMean += distance_n;
                     }
+                    distanceMean /= NUM_SAMPLES;
+
+                    minDistance = min(minDistance, distanceMean);
                 }
 
-                // return 0;
-                return saturate(sum / (NUM_OFFSETS * NUM_SAMPLES) * 2);
+                float edgeAmount = saturate(edgeMean / (NUM_OFFSETS * NUM_SAMPLES) * 2);
+                return float2(edgeAmount, minDistance);
             }
 
             Varyings UnlitPassVertex(Attributes input)
@@ -147,13 +156,8 @@
                 // col *= LinearToSRGB(tex2D(_RedBlueGradient, input.uv.y));
 
                 {
-                    const int NUM_SAMPLES = 8;
-                    float distance = 0;
-                    for (int sample = 0; sample < NUM_SAMPLES; sample++)
-                        distance += _DistanceBuffer.Load(input.uv * _ColorBuffer_TexelSize.zw, sample);
-                    distance /= NUM_SAMPLES;
-                    // distance = _DistanceBuffer.Load(input.uv * _ColorBuffer_TexelSize.zw, 0);
-                    col = lerp(col, lerp(0, _FogColor, GetFogAmount(distance, true)), GetEdgeAmount(input.uv));
+                    float2 edgeData = GetEdgeData(input.uv);
+                    col = lerp(col, lerp(0, _FogColor, GetFogAmount(edgeData.y, true)), edgeData.x);
                 }
 
                 col = ApplyVignette(col, input.uv, .5, _VignetteParams.x, _VignetteParams.y, _VignetteParams.z, 0);
