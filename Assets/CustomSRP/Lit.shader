@@ -113,9 +113,19 @@
             #pragma vertex UnlitPassVertex
             #pragma fragment UnlitPassFragment
 
-            float4 UnlitPassVertex(float4 positionOS : POSITION) : SV_POSITION
+            float4 UnlitPassVertex(float3 positionOS : POSITION) : SV_POSITION
             {
-                return TransformObjectToHClip(positionOS);
+                float4 positionCS = TransformObjectToHClip(positionOS);
+
+	            #if UNITY_REVERSED_Z
+		            positionCS.z =
+			            min(positionCS.z, positionCS.w * UNITY_NEAR_CLIP_VALUE);
+	            #else
+		            positionCS.z =
+			            max(positionCS.z, positionCS.w * UNITY_NEAR_CLIP_VALUE);
+	            #endif
+
+                return positionCS;
             }
 
             void UnlitPassFragment()
