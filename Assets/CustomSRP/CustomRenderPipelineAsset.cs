@@ -22,5 +22,5 @@ public class CustomRenderPipelineAsset : RenderPipelineAsset<CustomRenderPipelin
 public class ShadowSettings
 {
 	public float MaxDistance = 10;
-	public int AtlasSize = 4096;
+	public int AtlasSize = 2048;
 }

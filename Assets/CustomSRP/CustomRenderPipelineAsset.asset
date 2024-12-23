@@ -18,4 +18,4 @@ MonoBehaviour:
   FogColorMultipler: 1.2
   ShadowSettings:
     MaxDistance: 100
-    AtlasSize: 16384
+    AtlasSize: 2048
