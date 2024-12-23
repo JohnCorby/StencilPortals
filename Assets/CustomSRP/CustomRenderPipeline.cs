@@ -63,7 +63,7 @@ public class CustomRenderPipeline : RenderPipeline
 		// temp
 		{
 			camera.TryGetCullingParameters(out var cullingParameters);
-			cullingParameters.shadowDistance =  Mathf.Min(_asset.ShadowSettings.MaxDistance, camera.farClipPlane);
+			cullingParameters.shadowDistance = Mathf.Min(_asset.ShadowSettings.MaxDistance, camera.farClipPlane);
 			var cullingResults = context.Cull(ref cullingParameters);
 			DrawShadows(new RenderContext
 			{
@@ -113,12 +113,14 @@ public class CustomRenderPipeline : RenderPipeline
 		// temp
 		cmd.ReleaseTemporaryRT(Shader.PropertyToID("_ShadowBuffer"));
 
+#if UNITY_EDITOR
 		// cant render this per portal, it doesnt move for some reason
 		if (Handles.ShouldRenderGizmos())
 		{
 			cmd.DrawRendererList(context.CreateGizmoRendererList(camera, GizmoSubset.PreImageEffects));
 			cmd.DrawRendererList(context.CreateGizmoRendererList(camera, GizmoSubset.PostImageEffects));
 		}
+#endif
 
 		{
 			// TL, TR, BL, BR
