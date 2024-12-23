@@ -37,6 +37,9 @@ public class CustomRenderPipeline : RenderPipeline
 
 	private void RenderCamera(ScriptableRenderContext context, Camera camera)
 	{
+		// hacky, but no need to render past fog
+		camera.farClipPlane = RenderSettings.fogEndDistance * 2;
+
 		// apparently we only need to do this once and not per portal
 		context.SetupCameraProperties(camera);
 
@@ -60,7 +63,7 @@ public class CustomRenderPipeline : RenderPipeline
 		// temp
 		{
 			camera.TryGetCullingParameters(out var cullingParameters);
-			cullingParameters.shadowDistance = 10;
+			cullingParameters.shadowDistance =  Mathf.Min(_asset.ShadowSettings.MaxDistance, camera.farClipPlane);
 			var cullingResults = context.Cull(ref cullingParameters);
 			DrawShadows(new RenderContext
 			{
@@ -395,7 +398,7 @@ public class CustomRenderPipeline : RenderPipeline
 
 		var shadowRt = Shader.PropertyToID("_ShadowBuffer");
 
-		const int atlasSize = 4096;
+		var atlasSize = _asset.ShadowSettings.AtlasSize;
 		rc.cmd.GetTemporaryRT(shadowRt, atlasSize, atlasSize, 32, FilterMode.Bilinear, RenderTextureFormat.Shadowmap);
 		rc.cmd.SetRenderTarget(shadowRt);
 		rc.cmd.ClearRenderTarget(RTClearFlags.All, Color.clear);

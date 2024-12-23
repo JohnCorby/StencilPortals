@@ -16,3 +16,6 @@ MonoBehaviour:
   MaxDepth: 10
   PostProcessMaterial: {fileID: 2100000, guid: 06e4d6205dd42974c8c4269898059799, type: 2}
   FogColorMultipler: 1.2
+  ShadowSettings:
+    MaxDistance: 100
+    AtlasSize: 16384
