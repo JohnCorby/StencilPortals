@@ -76,26 +76,26 @@ public class CustomRenderPipeline : RenderPipeline
 		var rt0 = Shader.PropertyToID("_ColorBuffer");
 		var rt1 = Shader.PropertyToID("_NormalBuffer");
 		var rt2 = Shader.PropertyToID("_DistanceBuffer");
-		cmd.GetTemporaryRT(rt0, camera.pixelWidth*2, camera.pixelHeight*2, 32, FilterMode.Point, GraphicsFormat.R16G16B16A16_SFloat, 1);
+		cmd.GetTemporaryRT(rt0, camera.pixelWidth, camera.pixelHeight, 32, FilterMode.Point, GraphicsFormat.R16G16B16A16_SFloat, 8);
 		cmd.GetTemporaryRT(rt1, new RenderTextureDescriptor
 		{
-			width = camera.pixelWidth*2,
-			height = camera.pixelHeight*2,
-			msaaSamples = 1,
+			width = camera.pixelWidth,
+			height = camera.pixelHeight,
+			msaaSamples = 8,
 			graphicsFormat = GraphicsFormat.R16G16B16A16_SFloat,
 			depthBufferBits = 0,
 			dimension = TextureDimension.Tex2D,
-			// bindMS = true,
+			bindMS = true,
 		});
 		cmd.GetTemporaryRT(rt2, new RenderTextureDescriptor
 		{
-			width = camera.pixelWidth*2,
-			height = camera.pixelHeight*2,
-			msaaSamples = 1,
+			width = camera.pixelWidth,
+			height = camera.pixelHeight,
+			msaaSamples = 8,
 			graphicsFormat = GraphicsFormat.R32_SFloat,
 			depthBufferBits = 0,
 			dimension = TextureDimension.Tex2D,
-			// bindMS = true,
+			bindMS = true,
 		});
 		cmd.SetRenderTarget(colors: new RenderTargetIdentifier[] { rt0, rt1, rt2 }, depth: rt0);
 
@@ -106,7 +106,7 @@ public class CustomRenderPipeline : RenderPipeline
 			cmd = cmd,
 			ctx = context,
 			cam = camera,
-			viewport = new Rect(0, 0, camera.pixelWidth*2, camera.pixelHeight*2)
+			viewport = new Rect(0, 0, camera.pixelWidth, camera.pixelHeight)
 		};
 		RenderPortal(rc, null, 0);
 
@@ -133,11 +133,7 @@ public class CustomRenderPipeline : RenderPipeline
 			});
 		}
 
-		var rt4 = Shader.PropertyToID("_StupidBuffer");
-		cmd.GetTemporaryRT(rt4, camera.pixelWidth*2, camera.pixelHeight*2, 32, FilterMode.Bilinear, GraphicsFormat.R16G16B16A16_SFloat, 1);
-		cmd.Blit(BuiltinRenderTextureType.None, rt4, _asset.PostProcessMaterial, 0);
-		cmd.Blit(BuiltinRenderTextureType.None, BuiltinRenderTextureType.CameraTarget, _asset.PostProcessMaterial,1);
-		cmd.ReleaseTemporaryRT(rt4);
+		cmd.Blit(BuiltinRenderTextureType.None, BuiltinRenderTextureType.CameraTarget, _asset.PostProcessMaterial);
 		cmd.ReleaseTemporaryRT(rt0);
 		cmd.ReleaseTemporaryRT(rt1);
 		cmd.ReleaseTemporaryRT(rt2);

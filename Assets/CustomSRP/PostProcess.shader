@@ -30,8 +30,8 @@
 
             sampler2D _ColorBuffer;
             float4 _ColorBuffer_TexelSize;
-            Texture2D<float3> _NormalBuffer;
-            Texture2D<float> _DistanceBuffer;
+            Texture2DMS<float3> _NormalBuffer;
+            Texture2DMS<float> _DistanceBuffer;
 
             sampler3D _Lut;
             sampler2D _RedBlueGradient;
@@ -75,11 +75,11 @@
                 const float eps = 1.0 / 15;
 
                 float2 pixel = uv;
-                float3 normal_pixel = _NormalBuffer.Load(int3(pixel * _ColorBuffer_TexelSize.zw, 0));
-                float distance_pixel = _DistanceBuffer.Load(int3(pixel * _ColorBuffer_TexelSize.zw, 0));
+                float3 normal_pixel = _NormalBuffer.Load(pixel * _ColorBuffer_TexelSize.zw, 0);
+                float distance_pixel = _DistanceBuffer.Load(pixel * _ColorBuffer_TexelSize.zw, 0);
                 float3 world_position_pixel = GetWorldPos(pixel, distance_pixel);
 
-                const int NUM_SAMPLES = 1;
+                const int NUM_SAMPLES = 8;
                 const int NUM_OFFSETS = 4;
                 const int2 offsets[NUM_OFFSETS] = {
                     int2(0, 1),
@@ -99,10 +99,10 @@
                     float2 n = pixel + offsets[i] * _ColorBuffer_TexelSize.xy;
 
                     float distanceMean = 0;
-                    // for (int sample = 0; sample < NUM_SAMPLES; sample++)
+                    for (int sample = 0; sample < NUM_SAMPLES; sample++)
                     {
-                        float3 normal_n = _NormalBuffer.Load(int3(n * _ColorBuffer_TexelSize.zw, 0));
-                        float distance_n = _DistanceBuffer.Load(int3(n * _ColorBuffer_TexelSize.zw, 0));
+                        float3 normal_n = _NormalBuffer.Load(n * _ColorBuffer_TexelSize.zw, sample);
+                        float distance_n = _DistanceBuffer.Load(n * _ColorBuffer_TexelSize.zw, sample);
                         float3 world_position_n = GetWorldPos(n, distance_n);
 
                         float normalDist = dot(normal_n, normal_pixel);
@@ -110,8 +110,7 @@
 
                         if (normalDist < cos(alpha) || planeDistance > eps)
                         {
-                            edgeMean = 1;
-                            // edgeMean++;
+                            edgeMean++;
                         }
 
                         distanceMean += distance_n;
@@ -121,85 +120,9 @@
                     minDistance = min(minDistance, distanceMean);
                 }
 
-                float edgeAmount = saturate(edgeMean );
+                float edgeAmount = saturate(edgeMean / (NUM_OFFSETS * NUM_SAMPLES) * 2);
                 return float2(edgeAmount, minDistance);
             }
-
-            Varyings UnlitPassVertex(Attributes input)
-            {
-                Varyings output;
-                output.positionCS = TransformObjectToHClip(input.positionOS);
-                output.uv = input.uv;
-                return output;
-            }
-
-            sampler2D _ShadowBuffer;
-
-            float3 UnlitPassFragment(Varyings input) : SV_Target
-            {
-                float3 col = tex2D(_ColorBuffer, input.uv);
-
-                {
-                    float2 edgeData = GetEdgeData(input.uv);
-                    col = lerp(col, lerp(0, _FogColor, GetFogAmount(edgeData.y, true)), edgeData.x);
-                }
-
-                return col;
-            }
-            ENDHLSL
-        }
-
-
-
-
-
-
-
-
-
-
-        Pass
-        {
-            Cull Off
-            ZTest Always
-            ZWrite Off
-
-            HLSLPROGRAM
-            #pragma target 4.5
-            #pragma vertex UnlitPassVertex
-            #pragma fragment UnlitPassFragment
-
-            #include "Common.hlsl"
-            #include "URP.hlsl"
-            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
-
-            sampler2D _StupidBuffer;
-
-            sampler3D _Lut;
-            sampler2D _RedBlueGradient;
-            sampler2D _YellowGreenGradient;
-
-            float3 _VignetteParams;
-
-            sampler2D _TestInput;
-            sampler2D _TestOutput;
-            float4 _TestSlider;
-
-            float3 _AmbientLightColor;
-            // TL, TR, BL, BR
-            float3 _CameraCorners[4];
-
-            struct Attributes
-            {
-                float3 positionOS : POSITION;
-                float2 uv : TEXCOORD0;
-            };
-
-            struct Varyings
-            {
-                float4 positionCS : SV_POSITION;
-                float2 uv : uv;
-            };
 
             Varyings UnlitPassVertex(Attributes input)
             {
@@ -223,7 +146,7 @@
                         return SRGBToLinear(col);
                 }
 
-                float3 col = input.uv.x > _TestSlider.z ? tex2D(_StupidBuffer, input.uv) : tex2D(_TestInput, float2(input.uv.x, 1 - input.uv.y));
+                float3 col = input.uv.x > _TestSlider.z ? tex2D(_ColorBuffer, input.uv) : tex2D(_TestInput, float2(input.uv.x, 1 - input.uv.y));
 
                 // col = float3(input.uv.xy, 0);
 
@@ -231,6 +154,11 @@
                     return SRGBToLinear(col);
 
                 // col *= LinearToSRGB(tex2D(_RedBlueGradient, input.uv.y));
+
+                {
+                    float2 edgeData = GetEdgeData(input.uv);
+                    col = lerp(col, lerp(0, _FogColor, GetFogAmount(edgeData.y, true)), edgeData.x);
+                }
 
                 col = ApplyVignette(col, input.uv, .5, _VignetteParams.x, _VignetteParams.y, _VignetteParams.z, 0);
 
