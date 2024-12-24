@@ -76,6 +76,7 @@
 
                 float2 pixel = uv;
                 float3 normal_pixel = _NormalBuffer.Load(pixel * _ColorBuffer_TexelSize.zw, 0);
+                if (all(normal_pixel == 0)) return 0;
                 float distance_pixel = _DistanceBuffer.Load(pixel * _ColorBuffer_TexelSize.zw, 0);
                 float3 world_position_pixel = GetWorldPos(pixel, distance_pixel);
 
@@ -153,6 +154,7 @@
                 }
 
                 // if (all(input.uv < 1 / 3.)) return tex2D(_ShadowBuffer, input.uv * 3);
+                if (all(input.uv < 1 / 3.)) return _NormalBuffer.Load(input.uv * 3 * _ColorBuffer_TexelSize.zw, 0);
 
                 {
                     float2 uv = input.uv;

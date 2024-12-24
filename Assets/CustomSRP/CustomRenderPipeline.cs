@@ -63,7 +63,7 @@ public class CustomRenderPipeline : RenderPipeline
 		// temp
 		{
 			camera.TryGetCullingParameters(out var cullingParameters);
-			cullingParameters.shadowDistance = Mathf.Min(_asset.ShadowSettings.MaxDistance, camera.farClipPlane);
+			cullingParameters.shadowDistance = Mathf.Min(_asset.ShadowSettings.MaxDistance, RenderSettings.fogEndDistance);
 			var cullingResults = context.Cull(ref cullingParameters);
 			DrawShadows(new RenderContext
 			{
@@ -99,7 +99,7 @@ public class CustomRenderPipeline : RenderPipeline
 		});
 		cmd.SetRenderTarget(colors: new RenderTargetIdentifier[] { rt0, rt1, rt2 }, depth: rt0);
 
-		cmd.ClearRenderTarget(RTClearFlags.All, new[] { RenderSettings.fogColor * _asset.FogColorMultipler, new Color(0, 1, 0, 0), new Color(RenderSettings.fogEndDistance * 2, 0, 0, 0) });
+		cmd.ClearRenderTarget(RTClearFlags.All, new Color[] { RenderSettings.fogColor * _asset.FogColorMultipler, Vector4.zero, new Vector4(99999, 0) });
 
 		var rc = new RenderContext
 		{
@@ -127,10 +127,10 @@ public class CustomRenderPipeline : RenderPipeline
 			// need big z or it distorts. why.
 			cmd.SetGlobalVectorArray("_CameraCorners", new Vector4[]
 			{
-				camera.ViewportToWorldPoint(new Vector3(0, 1, 999999)),
-				camera.ViewportToWorldPoint(new Vector3(1, 1, 999999)),
-				camera.ViewportToWorldPoint(new Vector3(0, 0, 999999)),
-				camera.ViewportToWorldPoint(new Vector3(1, 0, 999999)),
+				camera.ViewportToWorldPoint(new Vector3(0, 1, 99999)),
+				camera.ViewportToWorldPoint(new Vector3(1, 1, 99999)),
+				camera.ViewportToWorldPoint(new Vector3(0, 0, 99999)),
+				camera.ViewportToWorldPoint(new Vector3(1, 0, 99999)),
 			});
 		}
 
