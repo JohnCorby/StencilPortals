@@ -136,7 +136,7 @@
 
             float3 UnlitPassFragment(Varyings input) : SV_Target
             {
-                // if (all(input.uv < 1/3.)) return tex2D(_ShadowBuffer, input.uv*3);
+                if (all(input.uv < 1/3.)) return tex2D(_ShadowBuffer, input.uv*3);
 
                 {
                     float2 uv = input.uv;
