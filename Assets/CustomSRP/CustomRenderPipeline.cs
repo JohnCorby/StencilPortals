@@ -422,6 +422,18 @@ public class CustomRenderPipeline : RenderPipeline
 				m.m22 = -m.m22;
 				m.m23 = -m.m23;
 			}
+			m.m00 = 0.5f * (m.m00 + m.m30);
+			m.m01 = 0.5f * (m.m01 + m.m31);
+			m.m02 = 0.5f * (m.m02 + m.m32);
+			m.m03 = 0.5f * (m.m03 + m.m33);
+			m.m10 = 0.5f * (m.m10 + m.m30);
+			m.m11 = 0.5f * (m.m11 + m.m31);
+			m.m12 = 0.5f * (m.m12 + m.m32);
+			m.m13 = 0.5f * (m.m13 + m.m33);
+			m.m20 = 0.5f * (m.m20 + m.m30);
+			m.m21 = 0.5f * (m.m21 + m.m31);
+			m.m22 = 0.5f * (m.m22 + m.m32);
+			m.m23 = 0.5f * (m.m23 + m.m33);
 			rc.cmd.SetGlobalMatrix("_ShadowMatrix", m);
 		}
 		rc.cmd.SetViewProjectionMatrices(view, proj);

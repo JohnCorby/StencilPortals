@@ -59,7 +59,6 @@
                 float3 positionWS = TransformObjectToWorld(input.positionOS);
                 output.positionVS = TransformWorldToView(positionWS);
                 output.positionLightSpace = mul(_ShadowMatrix, float4(positionWS, 1));
-                // output.positionCS = mul(_ShadowMatrix, float4(positionWS, 1));;
                 return output;
             }
 
@@ -70,10 +69,9 @@
                 // float3 ramp = saturate(dot(input.normalWS, _DirectionalLightDirection) * .5 + .5) * _DirectionalLightColor;
                 // return ramp;
 
-                bool shadow;
+                float shadow;
                 {
-                    float3 projCoords = input.positionLightSpace.xyz;
-                    projCoords = projCoords * 0.5 + 0.5;
+                    // float3 projCoords = input.positionLightSpace.xyz;
 
                     // float bias = 0.002;
                     // projCoords.z -= bias;
@@ -81,7 +79,7 @@
                     // float closestDepth = tex2D(_ShadowBuffer, projCoords.xy);
                     // float currentDepth = input.positionCS.z;
                     // shadow = currentDepth > closestDepth;
-                    shadow = SAMPLE_TEXTURE2D_SHADOW(_ShadowBuffer, SHADOW_SAMPLER, projCoords);
+                    shadow = SAMPLE_TEXTURE2D_SHADOW(_ShadowBuffer, SHADOW_SAMPLER, input.positionLightSpace);
 
                     // output.color = float3(currentDepth, closestDepth, shadow);
                     // output.color = shadow;
