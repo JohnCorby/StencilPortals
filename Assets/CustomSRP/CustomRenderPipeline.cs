@@ -124,12 +124,13 @@ public class CustomRenderPipeline : RenderPipeline
 
 		{
 			// TL, TR, BL, BR
+			// need big z or it distorts. distorts through portals anyway. why.
 			cmd.SetGlobalVectorArray("_CameraCorners", new Vector4[]
 			{
-				camera.ViewportToWorldPoint(new Vector3(0, 1, camera.farClipPlane)),
-				camera.ViewportToWorldPoint(new Vector3(1, 1, camera.farClipPlane)),
-				camera.ViewportToWorldPoint(new Vector3(0, 0, camera.farClipPlane)),
-				camera.ViewportToWorldPoint(new Vector3(1, 0, camera.farClipPlane)),
+				camera.ViewportToWorldPoint(new Vector3(0, 1, 10000)),
+				camera.ViewportToWorldPoint(new Vector3(1, 1, 10000)),
+				camera.ViewportToWorldPoint(new Vector3(0, 0, 10000)),
+				camera.ViewportToWorldPoint(new Vector3(1, 0, 10000)),
 			});
 		}
 

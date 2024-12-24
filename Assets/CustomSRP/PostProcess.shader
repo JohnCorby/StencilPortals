@@ -136,7 +136,23 @@
 
             float3 UnlitPassFragment(Varyings input) : SV_Target
             {
-                if (all(input.uv < 1/3.)) return tex2D(_ShadowBuffer, input.uv*3);
+                if (false)
+                {
+                    float3 worldPos = GetWorldPos(input.uv, _DistanceBuffer.Load(input.uv * _ColorBuffer_TexelSize.zw, 0));
+
+                    // The following part creates the checkerboard effect.
+                    // Scale is the inverse size of the squares.
+                    float scale = .1;
+                    // Scale, mirror and snap the coordinates.
+                    uint3 worldIntPos = uint3(abs(worldPos.xyz * scale));
+                    // Divide the surface into squares. Calculate the color ID value.
+                    bool white = ((worldIntPos.x) & 1) ^ (worldIntPos.y & 1) ^ (worldIntPos.z & 1);
+                    // Color the square based on the ID value (black or white).
+                    half4 color = white ? half4(1, 1, 1, 1) : half4(0, 0, 0, 1);
+                    return color;
+                }
+
+                // if (all(input.uv < 1 / 3.)) return tex2D(_ShadowBuffer, input.uv * 3);
 
                 {
                     float2 uv = input.uv;
