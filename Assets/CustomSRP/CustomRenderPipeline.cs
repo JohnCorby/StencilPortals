@@ -100,7 +100,7 @@ public class CustomRenderPipeline : RenderPipeline
 		});
 		cmd.SetRenderTarget(new RenderTargetIdentifier[] { rt0, rt1, rt2 }, rt0);
 
-		cmd.ClearRenderTarget(RTClearFlags.All, new Color[] { RenderSettings.fogColor * _asset.FogColorMultiplier, new Vector4(0, 1, 0), new Vector4(RenderSettings.fogEndDistance * _asset.EdgeFadeMultiplier, 0) });
+		cmd.ClearRenderTarget(RTClearFlags.All, new Color[] { RenderSettings.fogColor * _asset.FogColorMultiplier, Vector4.zero, new Vector4(-1, 0) });
 
 		var rc = new RenderContext
 		{

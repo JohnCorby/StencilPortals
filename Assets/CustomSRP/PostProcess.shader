@@ -78,13 +78,13 @@
 
                 float2 pixel = uv;
                 float3 normal_pixel = _NormalBuffer.Load(pixel * _ColorBuffer_TexelSize.zw, 0);
-                if (all(normal_pixel == 0)) return 0;
                 float distance_pixel = _DistanceBuffer.Load(pixel * _ColorBuffer_TexelSize.zw, 0);
                 float3 world_position_pixel = GetWorldPos(pixel, distance_pixel);
 
                 const int NUM_SAMPLES = 8;
-                const int NUM_OFFSETS = 4;
+                const int NUM_OFFSETS = 5;
                 const int2 offsets[NUM_OFFSETS] = {
+                    int2(0, 0),
                     int2(0, 1),
                     int2(0, -1),
                     int2(1, 0),
@@ -97,6 +97,7 @@
 
                 float edgeMean = 0;
                 float minDistance = 99999;
+                float skyboxMean = 0;
                 for (int i = 0; i < NUM_OFFSETS; i++)
                 {
                     float2 n = pixel + offsets[i] * _ColorBuffer_TexelSize.xy;
@@ -107,6 +108,12 @@
                         float3 normal_n = _NormalBuffer.Load(n * _ColorBuffer_TexelSize.zw, sample);
                         float distance_n = _DistanceBuffer.Load(n * _ColorBuffer_TexelSize.zw, sample);
                         float3 world_position_n = GetWorldPos(n, distance_n);
+
+                        if (distance_n == -1)
+                        {
+                            skyboxMean++;
+                            continue;
+                        }
 
                         float normalDist = dot(normal_n, normal_pixel);
                         float planeDistance = abs(dot(normal_pixel, world_position_n - world_position_pixel));
@@ -123,7 +130,10 @@
                     minDistance = min(minDistance, distanceMean);
                 }
 
-                float edgeAmount = saturate(edgeMean / (NUM_OFFSETS * NUM_SAMPLES) * 2);
+                edgeMean /= NUM_OFFSETS * NUM_SAMPLES;
+                skyboxMean /= NUM_OFFSETS * NUM_SAMPLES;
+
+                float edgeAmount = saturate((edgeMean - skyboxMean) * 2);
                 return float2(edgeAmount, minDistance);
             }
 
