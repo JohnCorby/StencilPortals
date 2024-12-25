@@ -24,6 +24,9 @@
             float3 _DirectionalLightDirection;
             float3 _AmbientLightColor;
 
+            // rotates WS normals to account for looking thru portals
+            float4x4 _NormalRotationMatrix;
+
             // sampler2D _ShadowBuffer;
             TEXTURE2D_SHADOW(_ShadowBuffer);
             #define SHADOW_SAMPLER sampler_linear_clamp_compare
@@ -89,7 +92,7 @@
                 float3 ambient = _AmbientLightColor;
                 output.color = diffuse * shadow + ambient;
 
-                output.normal = input.normalWS;
+                output.normal = mul(_NormalRotationMatrix, float4(input.normalWS, 0));
 
                 output.distance = length(input.positionVS);
 
@@ -115,13 +118,11 @@
             {
                 float4 positionCS = TransformObjectToHClip(positionOS);
 
-	            #if UNITY_REVERSED_Z
-		            positionCS.z =
-			            min(positionCS.z, positionCS.w * UNITY_NEAR_CLIP_VALUE);
-	            #else
-		            positionCS.z =
-			            max(positionCS.z, positionCS.w * UNITY_NEAR_CLIP_VALUE);
-	            #endif
+                #if UNITY_REVERSED_Z
+                positionCS.z = min(positionCS.z, positionCS.w * UNITY_NEAR_CLIP_VALUE);
+                #else
+                positionCS.z = max(positionCS.z, positionCS.w * UNITY_NEAR_CLIP_VALUE);
+                #endif
 
                 return positionCS;
             }
