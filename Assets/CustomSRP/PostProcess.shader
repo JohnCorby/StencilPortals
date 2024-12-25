@@ -6,6 +6,7 @@
         [NoScaleOffset] _RedBlueGradient ("Red Blue Gradient", 2D) = ""
         [NoScaleOffset] _YellowGreenGradient ("Yellow Green Gradient", 2D) = ""
         _VignetteParams ("Vignette Params (intensity, roundness, smoothness)", Vector) = (0,0,0,0)
+        _OverlayIntensity ("Overlay Intensity", Float) = 1
 
         [NoScaleOffset] _TestInput ("test input", 2D) = ""
         [NoScaleOffset] _TestOutput ("test output", 2D) = ""
@@ -38,6 +39,7 @@
             sampler2D _YellowGreenGradient;
 
             float3 _VignetteParams;
+            float _OverlayIntensity;
 
             sampler2D _TestInput;
             sampler2D _TestOutput;
@@ -183,9 +185,9 @@
                 // col.y = 1 - col.y;
                 col = tex3D(_Lut, col);
 
-                // col = lerp(col, col * tex2D(_YellowGreenGradient, input.uv), 1 - Luminance(col));
-                // col = lerp(col, col * tex2D(_RedBlueGradient, input.uv), 1 - Luminance(col));
-                col = lerp(col, col * tex2D(_RedBlueGradient, input.uv) * tex2D(_YellowGreenGradient, input.uv), 1 - Luminance(col));
+                col = lerp(col, col * tex2D(_RedBlueGradient, input.uv) * _OverlayIntensity, 1 - Luminance(col));
+                col = lerp(col, col * tex2D(_YellowGreenGradient, input.uv) * _OverlayIntensity, 1 - Luminance(col));
+                // col = lerp(col, col * tex2D(_RedBlueGradient, input.uv) * _OverlayIntensity * tex2D(_YellowGreenGradient, input.uv) * _OverlayIntensity, 1 - Luminance(col));
 
                 return col;
             }
