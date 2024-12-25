@@ -1,26 +1,22 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Rendering;
 
 [CreateAssetMenu(menuName = "Rendering/CustomRenderPipelineAsset", fileName = "CustomRenderPipelineAsset")]
 public class CustomRenderPipelineAsset : RenderPipelineAsset<CustomRenderPipeline>
 {
 	public Material PortalPassesMaterial;
-	[Range(0, 10)]
 	public int MaxDepth = 1;
+	[Space]
 	public Material PostProcessMaterial;
-	public float FogColorMultipler = 1;
-	public ShadowSettings ShadowSettings;
+	[Space]
+	public float FogColorMultiplier = 1;
+	public float EdgeFadeMultiplier = 2;
+	[Space]
+	public float MaxShadowDistance = 10;
+	public int ShadowAtlasSize = 2048;
 
 	protected override RenderPipeline CreatePipeline()
 	{
 		return new CustomRenderPipeline(this);
 	}
-}
-
-[Serializable]
-public class ShadowSettings
-{
-	public float MaxDistance = 10;
-	public int AtlasSize = 2048;
 }

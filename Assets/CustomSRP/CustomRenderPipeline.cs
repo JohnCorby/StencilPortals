@@ -39,7 +39,7 @@ public class CustomRenderPipeline : RenderPipeline
 	private void RenderCamera(ScriptableRenderContext context, Camera camera)
 	{
 		// hacky, but no need to render past fog
-		camera.farClipPlane = RenderSettings.fogEndDistance * 2;
+		camera.farClipPlane = RenderSettings.fogEndDistance * _asset.EdgeFadeMultiplier;
 
 		// apparently we only need to do this once and not per portal
 		context.SetupCameraProperties(camera);
@@ -51,9 +51,9 @@ public class CustomRenderPipeline : RenderPipeline
 		{
 			cmd.SetGlobalVector("_FogParams", new Vector4(
 				RenderSettings.fogStartDistance, RenderSettings.fogEndDistance,
-				RenderSettings.fogStartDistance, RenderSettings.fogEndDistance * 2
+				RenderSettings.fogStartDistance, RenderSettings.fogEndDistance * _asset.EdgeFadeMultiplier
 			));
-			cmd.SetGlobalColor("_FogColor", RenderSettings.fogColor * _asset.FogColorMultipler);
+			cmd.SetGlobalColor("_FogColor", RenderSettings.fogColor * _asset.FogColorMultiplier);
 			cmd.SetGlobalVector("_AmbientLightColor", RenderSettings.ambientLight);
 
 			var light = RenderSettings.sun;
@@ -64,7 +64,7 @@ public class CustomRenderPipeline : RenderPipeline
 		// temp
 		{
 			camera.TryGetCullingParameters(out var cullingParameters);
-			cullingParameters.shadowDistance = Mathf.Min(_asset.ShadowSettings.MaxDistance, RenderSettings.fogEndDistance);
+			cullingParameters.shadowDistance = Mathf.Min(_asset.MaxShadowDistance, RenderSettings.fogEndDistance);
 			var cullingResults = context.Cull(ref cullingParameters);
 			DrawShadows(new RenderContext
 			{
@@ -98,9 +98,9 @@ public class CustomRenderPipeline : RenderPipeline
 			dimension = TextureDimension.Tex2D,
 			bindMS = true,
 		});
-		cmd.SetRenderTarget(colors: new RenderTargetIdentifier[] { rt0, rt1, rt2 }, depth: rt0);
+		cmd.SetRenderTarget(new RenderTargetIdentifier[] { rt0, rt1, rt2 }, rt0);
 
-		cmd.ClearRenderTarget(RTClearFlags.All, new Color[] { RenderSettings.fogColor * _asset.FogColorMultipler, Vector4.zero, new Vector4(99999, 0) });
+		cmd.ClearRenderTarget(RTClearFlags.All, new Color[] { RenderSettings.fogColor * _asset.FogColorMultiplier, Vector4.zero, new Vector4(99999, 0) });
 
 		var rc = new RenderContext
 		{
@@ -420,7 +420,7 @@ public class CustomRenderPipeline : RenderPipeline
 
 		var shadowRt = Shader.PropertyToID("_ShadowBuffer");
 
-		var atlasSize = _asset.ShadowSettings.AtlasSize;
+		var atlasSize = _asset.ShadowAtlasSize;
 		rc.cmd.GetTemporaryRT(shadowRt, atlasSize, atlasSize, 32, FilterMode.Bilinear, RenderTextureFormat.Shadowmap);
 		rc.cmd.SetRenderTarget(shadowRt);
 		rc.cmd.ClearRenderTarget(RTClearFlags.All, Color.clear);
