@@ -262,7 +262,6 @@ public class CustomRenderPipeline : RenderPipeline
 
 		// bad
 		// TODO https://discussions.unity.com/t/draw-bounding-rectangle-screen-space-around-a-game-object-with-a-renderer-world-space/821680/4
-		// BUG: breaks when intersecting sometimes lol
 		var worldCorners = new[]
 		{
 			portal.transform.position + (portal.transform.up + portal.transform.right) * 1.5f,
@@ -274,15 +273,16 @@ public class CustomRenderPipeline : RenderPipeline
 
 		// if any of the corners are behind the camera, just set viewport to full screen lol
 		// this is terrible, i dont know why i have to do 1 instead of 0 :(
-		if (screenCorners.Any(x => x.z < 1)) return new Rect(0, 0, rc.cam.pixelWidth, rc.cam.pixelHeight);
+		if (screenCorners.Any(x => x.z < 1))
+			return new Rect(0, 0, rc.cam.pixelWidth, rc.cam.pixelHeight);
 
-		// viewport expects whole numbers
-		var left = (int)screenCorners.Min(x => x.x);
-		var right = (int)screenCorners.Max(x => x.x);
-		var bottom = (int)screenCorners.Min(x => x.y);
-		var top = (int)screenCorners.Max(x => x.y);
-
-		return new Rect(left, bottom, right - left, top - bottom);
+		return new Rect
+		{
+			xMin = screenCorners.Min(x => x.x),
+			yMin = screenCorners.Min(x => x.y),
+			xMax = screenCorners.Max(x => x.x),
+			yMax = screenCorners.Max(x => x.y),
+		};
 	}
 
 	/// <summary>
@@ -303,7 +303,14 @@ public class CustomRenderPipeline : RenderPipeline
 			// want to use original proj
 			rc.cam.ResetProjectionMatrix();
 
-			rc.viewport = GetBoundingRectangle(rc, fromPortal);
+			var newViewport = GetBoundingRectangle(rc, fromPortal);
+			// confine new viewport to old viewport
+			// also, viewport expects whole numbers
+			newViewport.xMin = (int)Mathf.Max(newViewport.xMin, rc.viewport.xMin);
+			newViewport.yMin = (int)Mathf.Max(newViewport.yMin, rc.viewport.yMin);
+			newViewport.xMax = (int)Mathf.Min(newViewport.xMax, rc.viewport.xMax);
+			newViewport.yMax = (int)Mathf.Min(newViewport.yMax, rc.viewport.yMax);
+			rc.viewport = newViewport;
 			rc.cmd.SetViewport(rc.viewport);
 
 			// make matrix to go from original proj to new viewport proj
