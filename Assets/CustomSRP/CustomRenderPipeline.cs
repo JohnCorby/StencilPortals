@@ -159,7 +159,7 @@ public class CustomRenderPipeline : RenderPipeline
 	private void RenderPortal(RenderContext rc, Portal portal, int currentDepth)
 	{
 		rc.cam.TryGetCullingParameters(out var cullingParameters);
-		cullingParameters.shadowDistance = 100;
+		cullingParameters.shadowDistance = Mathf.Min(_asset.MaxShadowDistance, RenderSettings.fogEndDistance);
 		var cullingResults = rc.ctx.Cull(ref cullingParameters);
 
 		DrawShadows(rc, cullingResults);

@@ -158,7 +158,7 @@
                     return color;
                 }
 
-                // if (all(input.uv < 1 / 3.)) return tex2D(_ShadowBuffer, input.uv * 3);
+                if (all(input.uv < 1 / 3.)) return tex2D(_ShadowBuffer, input.uv * 3);
                 // if (all(input.uv < 1 / 3.)) return _NormalBuffer.Load(input.uv * 3 * _ColorBuffer_TexelSize.zw, 0);
 
                 {
