@@ -92,7 +92,7 @@
                 float3 ambient = _AmbientLightColor;
                 output.color = diffuse * shadow + ambient;
 
-                output.normal = mul(_NormalRotationMatrix, float4(input.normalWS, 0));
+                output.normal = TransformWorldToViewNormal(input.normalWS, true);
 
                 output.distance = length(input.positionVS);
 

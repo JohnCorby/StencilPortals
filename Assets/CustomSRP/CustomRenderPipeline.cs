@@ -100,7 +100,7 @@ public class CustomRenderPipeline : RenderPipeline
 		});
 		cmd.SetRenderTarget(new RenderTargetIdentifier[] { rt0, rt1, rt2 }, rt0);
 
-		cmd.ClearRenderTarget(RTClearFlags.All, new Color[] { RenderSettings.fogColor * _asset.FogColorMultiplier, new Vector4(0, 1, 0), new Vector4(RenderSettings.fogEndDistance * _asset.EdgeFadeMultiplier, 0) });
+		cmd.ClearRenderTarget(RTClearFlags.All, new Color[] { RenderSettings.fogColor * _asset.FogColorMultiplier, new Vector4(0, 0, 1), new Vector4(RenderSettings.fogEndDistance * _asset.EdgeFadeMultiplier, 0) });
 
 		var rc = new RenderContext
 		{
@@ -135,9 +135,10 @@ public class CustomRenderPipeline : RenderPipeline
 				camera.ViewportToWorldPoint(new Vector3(0, 0, 99999)),
 				camera.ViewportToWorldPoint(new Vector3(1, 0, 99999)),
 			});
-		}
-
+			// blit changes unity matrices so lol
+			cmd.SetGlobalMatrix("_ViewMatrix", rc.cam.worldToCameraMatrix);
 		cmd.Blit(BuiltinRenderTextureType.None, BuiltinRenderTextureType.CameraTarget, _asset.PostProcessMaterial);
+		}
 		cmd.ReleaseTemporaryRT(rt0);
 		cmd.ReleaseTemporaryRT(rt1);
 		cmd.ReleaseTemporaryRT(rt2);

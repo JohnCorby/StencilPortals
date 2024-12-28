@@ -61,13 +61,16 @@
                 float2 uv : uv;
             };
 
+            float4x4 _ViewMatrix;
+
             float3 GetWorldPos(float2 uv, float distance)
             {
                 float3 top = lerp(_CameraCorners[0], _CameraCorners[1], uv.x);
                 float3 bottom = lerp(_CameraCorners[2], _CameraCorners[3], uv.x);
                 float3 ray = lerp(bottom, top, uv.y);
 
-                return normalize(ray) * distance;
+                float3 worldPos = normalize(ray) * distance;
+                return mul(_ViewMatrix, float4(worldPos, 1));
             }
 
             // return: edge amount, min distance
@@ -156,7 +159,7 @@
                 }
 
                 // if (all(input.uv < 1 / 3.)) return tex2D(_ShadowBuffer, input.uv * 3);
-                // if (all(input.uv < 1 / 3.)) return _NormalBuffer.Load(input.uv * 3 * _ColorBuffer_TexelSize.zw, 0);
+                if (all(input.uv < 1 / 3.)) return _NormalBuffer.Load(input.uv * 3 * _ColorBuffer_TexelSize.zw, 0);
 
                 {
                     float2 uv = input.uv;
@@ -177,7 +180,7 @@
 
                 {
                     float2 edgeData = GetEdgeData(input.uv);
-                    col = lerp(col, lerp(0, _FogColor, GetFogAmount(edgeData.y, true)), edgeData.x);
+                    col = lerp(col, lerp(0, _FogColor, 0), edgeData.x);
                 }
 
                 col = ApplyVignette(col, input.uv, .5, _VignetteParams.x, _VignetteParams.y, _VignetteParams.z, 0);
