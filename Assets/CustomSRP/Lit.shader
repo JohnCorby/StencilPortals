@@ -83,6 +83,7 @@
                     // float currentDepth = input.positionCS.z;
                     // shadow = currentDepth > closestDepth;
                     shadow = SAMPLE_TEXTURE2D_SHADOW(_ShadowBuffer, SHADOW_SAMPLER, input.positionLightSpace);
+                    shadow = smoothstep(.4, .6, shadow);
 
                     // output.color = float3(currentDepth, closestDepth, shadow);
                     // output.color = shadow;
