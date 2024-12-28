@@ -159,7 +159,7 @@
                 }
 
                 // if (all(input.uv < 1 / 3.)) return tex2D(_ShadowBuffer, input.uv * 3);
-                if (all(input.uv < 1 / 3.)) return _NormalBuffer.Load(input.uv * 3 * _ColorBuffer_TexelSize.zw, 0);
+                // if (all(input.uv < 1 / 3.)) return _NormalBuffer.Load(input.uv * 3 * _ColorBuffer_TexelSize.zw, 0);
 
                 {
                     float2 uv = input.uv;
@@ -180,7 +180,7 @@
 
                 {
                     float2 edgeData = GetEdgeData(input.uv);
-                    col = lerp(col, lerp(0, _FogColor, 0), edgeData.x);
+                    col = lerp(col, lerp(0, _FogColor, GetFogAmount(edgeData.y, true)), edgeData.x);
                 }
 
                 col = ApplyVignette(col, input.uv, .5, _VignetteParams.x, _VignetteParams.y, _VignetteParams.z, 0);

@@ -33,7 +33,6 @@ public class CustomRenderPipeline : RenderPipeline
 		public ScriptableRenderContext ctx;
 		public Camera cam;
 		public Rect viewport;
-		public Matrix4x4 _NormalRotationMatrix;
 	}
 
 	private void RenderCamera(ScriptableRenderContext context, Camera camera)
@@ -108,9 +107,7 @@ public class CustomRenderPipeline : RenderPipeline
 			ctx = context,
 			cam = camera,
 			viewport = new Rect(0, 0, camera.pixelWidth, camera.pixelHeight),
-			_NormalRotationMatrix = Matrix4x4.identity,
 		};
-		rc.cmd.SetGlobalMatrix("_NormalRotationMatrix", rc._NormalRotationMatrix);
 		RenderPortal(rc, null, 0);
 
 		// temp
@@ -170,7 +167,6 @@ public class CustomRenderPipeline : RenderPipeline
 			var localToWorld = rc.cam.transform.localToWorldMatrix;
 			var proj = rc.cam.projectionMatrix;
 			var viewport = rc.viewport;
-			var _NormalRotationMatrix = rc._NormalRotationMatrix;
 
 			// DFS traverse of portals
 			foreach (var innerPortal in GetInnerPortals(rc, portal))
@@ -185,7 +181,7 @@ public class CustomRenderPipeline : RenderPipeline
 
 				RenderPortal(rc, innerPortal, currentDepth);
 
-				UnsetupCamera(ref rc, localToWorld, proj, viewport, _NormalRotationMatrix);
+				UnsetupCamera(ref rc, localToWorld, proj, viewport);
 
 				UnpunchHole(rc, innerPortal, ref currentDepth);
 
@@ -337,12 +333,6 @@ public class CustomRenderPipeline : RenderPipeline
 			// actually move camera so culling happens. could edit cullingMatrix instead but whatever
 			rc.cam.transform.SetPositionAndRotation(localToWorld.GetPosition(), localToWorld.rotation);
 			rc.cmd.SetViewMatrix(rc.cam.worldToCameraMatrix);
-
-			// rotation difference between the 2 portals
-			// same as p2pMatrix, but only rotation
-			var p2pRotationMatrix = Matrix4x4.Rotate(Quaternion.Inverse(toPortal.transform.rotation) * Quaternion.Euler(0, 180, 0) * fromPortal.transform.rotation);
-			rc._NormalRotationMatrix = p2pRotationMatrix * rc._NormalRotationMatrix;
-			rc.cmd.SetGlobalMatrix("_NormalRotationMatrix", rc._NormalRotationMatrix);
 		}
 
 		// set near plane to toPortal
@@ -372,7 +362,7 @@ public class CustomRenderPipeline : RenderPipeline
 	/// <summary>
 	/// undo matrices and viewport
 	/// </summary>
-	private void UnsetupCamera(ref RenderContext rc, Matrix4x4 localToWorld, Matrix4x4 proj, Rect viewport, Matrix4x4 _NormalRotationMatrix)
+	private void UnsetupCamera(ref RenderContext rc, Matrix4x4 localToWorld, Matrix4x4 proj, Rect viewport)
 	{
 		var sampleName = $"unsetup camera";
 		rc.cmd.BeginSample(sampleName);
@@ -383,8 +373,6 @@ public class CustomRenderPipeline : RenderPipeline
 		rc.cmd.SetProjectionMatrix(rc.cam.projectionMatrix);
 		rc.viewport = viewport;
 		rc.cmd.SetViewport(rc.viewport);
-		rc._NormalRotationMatrix = _NormalRotationMatrix;
-		rc.cmd.SetGlobalMatrix("_NormalRotationMatrix", rc._NormalRotationMatrix);
 
 		rc.cmd.EndSample(sampleName);
 	}
