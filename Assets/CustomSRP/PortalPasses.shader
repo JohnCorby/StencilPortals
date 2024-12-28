@@ -12,6 +12,7 @@
         {
             Name "punch hole"
             ZWrite Off
+            ColorMask 0
             Stencil
             {
                 Ref [_StencilRef]
@@ -81,6 +82,7 @@
         {
             Name "unpunch hole"
             ZTest Always
+            ColorMask 0
             Stencil
             {
                 Ref [_StencilRef]
