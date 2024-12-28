@@ -172,6 +172,10 @@ public class CustomRenderPipeline : RenderPipeline
 
 		DrawGeometry(rc, cullingResults, true, currentDepth);
 
+		// release shadow buffer before recursion so we reuse one rt instead of creating a new one each time
+		// this means transparent geometry cant read shadows. MG has this limitation too
+		rc.cmd.ReleaseTemporaryRT(Shader.PropertyToID("_ShadowBuffer"));
+
 		if (currentDepth < _asset.MaxDepth)
 		{
 			// get camera state before changing it
