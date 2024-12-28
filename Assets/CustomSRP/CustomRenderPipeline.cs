@@ -61,6 +61,7 @@ public class CustomRenderPipeline : RenderPipeline
 		}
 
 		// temp
+		/*
 		{
 			camera.TryGetCullingParameters(out var cullingParameters);
 			cullingParameters.shadowDistance = Mathf.Min(_asset.MaxShadowDistance, RenderSettings.fogEndDistance);
@@ -72,6 +73,7 @@ public class CustomRenderPipeline : RenderPipeline
 				cam = camera,
 			}, cullingResults);
 		}
+		*/
 
 		var rt0 = Shader.PropertyToID("_ColorBuffer");
 		var rt1 = Shader.PropertyToID("_NormalBuffer");
@@ -111,7 +113,7 @@ public class CustomRenderPipeline : RenderPipeline
 		RenderPortal(rc, null, 0);
 
 		// temp
-		cmd.ReleaseTemporaryRT(Shader.PropertyToID("_ShadowBuffer"));
+		// cmd.ReleaseTemporaryRT(Shader.PropertyToID("_ShadowBuffer"));
 
 #if UNITY_EDITOR
 		// cant render this per portal, it doesnt move for some reason
@@ -134,7 +136,7 @@ public class CustomRenderPipeline : RenderPipeline
 			});
 			// blit changes unity matrices so lol
 			cmd.SetGlobalMatrix("_ViewMatrix", rc.cam.worldToCameraMatrix);
-		cmd.Blit(BuiltinRenderTextureType.None, BuiltinRenderTextureType.CameraTarget, _asset.PostProcessMaterial);
+			cmd.Blit(BuiltinRenderTextureType.None, BuiltinRenderTextureType.CameraTarget, _asset.PostProcessMaterial);
 		}
 		cmd.ReleaseTemporaryRT(rt0);
 		cmd.ReleaseTemporaryRT(rt1);
@@ -157,7 +159,16 @@ public class CustomRenderPipeline : RenderPipeline
 	private void RenderPortal(RenderContext rc, Portal portal, int currentDepth)
 	{
 		rc.cam.TryGetCullingParameters(out var cullingParameters);
+		cullingParameters.shadowDistance = 100;
 		var cullingResults = rc.ctx.Cull(ref cullingParameters);
+
+		DrawShadows(rc, cullingResults);
+
+		var rt0 = Shader.PropertyToID("_ColorBuffer");
+		var rt1 = Shader.PropertyToID("_NormalBuffer");
+		var rt2 = Shader.PropertyToID("_DistanceBuffer");
+		rc.cmd.SetRenderTarget(new RenderTargetIdentifier[] { rt0, rt1, rt2 }, rt0);
+		rc.cmd.SetViewport(rc.viewport);
 
 		DrawGeometry(rc, cullingResults, true, currentDepth);
 
