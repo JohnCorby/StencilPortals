@@ -4,6 +4,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
+using UnityEngine.Profiling;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RendererUtils;
 
@@ -37,6 +38,9 @@ public class CustomRenderPipeline : RenderPipeline
 
 	private void RenderCamera(ScriptableRenderContext context, Camera camera)
 	{
+		var sampleName = $"render camera \"{camera.name}\"";
+		Profiler.BeginSample(sampleName);
+
 		// hacky, but no need to render past fog
 		camera.farClipPlane = RenderSettings.fogEndDistance * _asset.EdgeFadeMultiplier;
 
@@ -44,7 +48,6 @@ public class CustomRenderPipeline : RenderPipeline
 		context.SetupCameraProperties(camera);
 
 		var cmd = CommandBufferPool.Get();
-		var sampleName = $"render camera \"{camera.name}\"";
 		cmd.BeginSample(sampleName);
 
 		{
@@ -145,12 +148,14 @@ public class CustomRenderPipeline : RenderPipeline
 		cmd.EndSample(sampleName);
 
 		context.ExecuteCommandBuffer(cmd);
-		context.Submit();
-
 		CommandBufferPool.Release(cmd);
+
+		context.Submit();
 
 		// orientation gizmo breaks unless we do this
 		camera.ResetProjectionMatrix();
+
+		Profiler.EndSample();
 	}
 
 	/// <summary>
@@ -188,6 +193,7 @@ public class CustomRenderPipeline : RenderPipeline
 			{
 				// could be moved to start/end of RenderPortal, but the code reads nicer like this
 				var sampleName = $"render portal \"{innerPortal.name}\" depth {currentDepth}";
+				Profiler.BeginSample(sampleName);
 				rc.cmd.BeginSample(sampleName);
 
 				PunchHole(rc, innerPortal, ref currentDepth);
@@ -201,6 +207,7 @@ public class CustomRenderPipeline : RenderPipeline
 				UnpunchHole(rc, innerPortal, ref currentDepth);
 
 				rc.cmd.EndSample(sampleName);
+				Profiler.EndSample();
 			}
 		}
 
@@ -233,6 +240,7 @@ public class CustomRenderPipeline : RenderPipeline
 	private void PunchHole(RenderContext rc, Portal portal, ref int currentDepth)
 	{
 		var sampleName = $"punch hole";
+		Profiler.BeginSample(sampleName);
 		rc.cmd.BeginSample(sampleName);
 
 		// read stencil and incr
@@ -247,6 +255,7 @@ public class CustomRenderPipeline : RenderPipeline
 		rc.cmd.DrawRenderer(portal.Renderer, _asset.PortalPassesMaterial, 0, 1);
 
 		rc.cmd.EndSample(sampleName);
+		Profiler.EndSample();
 	}
 
 	/// <summary>
@@ -256,6 +265,7 @@ public class CustomRenderPipeline : RenderPipeline
 	private void UnpunchHole(RenderContext rc, Portal portal, ref int currentDepth)
 	{
 		var sampleName = $"unpunch hole";
+		Profiler.BeginSample(sampleName);
 		rc.cmd.BeginSample(sampleName);
 
 		// read stencil and decr
@@ -266,6 +276,7 @@ public class CustomRenderPipeline : RenderPipeline
 		currentDepth--;
 
 		rc.cmd.EndSample(sampleName);
+		Profiler.EndSample();
 	}
 
 	/// <summary>
@@ -310,6 +321,7 @@ public class CustomRenderPipeline : RenderPipeline
 		var toPortal = portal.LinkedPortal;
 
 		var sampleName = $"setup camera from \"{fromPortal.name}\" to \"{toPortal.name}\"";
+		Profiler.BeginSample(sampleName);
 		rc.cmd.BeginSample(sampleName);
 
 		// confine frustum to fromPortal
@@ -372,6 +384,7 @@ public class CustomRenderPipeline : RenderPipeline
 		}
 
 		rc.cmd.EndSample(sampleName);
+		Profiler.EndSample();
 	}
 
 	/// <summary>
@@ -380,6 +393,7 @@ public class CustomRenderPipeline : RenderPipeline
 	private void UnsetupCamera(ref RenderContext rc, Matrix4x4 localToWorld, Matrix4x4 proj, Rect viewport)
 	{
 		var sampleName = $"unsetup camera";
+		Profiler.BeginSample(sampleName);
 		rc.cmd.BeginSample(sampleName);
 
 		rc.cam.transform.SetPositionAndRotation(localToWorld.GetPosition(), localToWorld.rotation);
@@ -390,12 +404,14 @@ public class CustomRenderPipeline : RenderPipeline
 		rc.cmd.SetViewport(rc.viewport);
 
 		rc.cmd.EndSample(sampleName);
+		Profiler.EndSample();
 	}
 
 
 	private void DrawGeometry(RenderContext rc, CullingResults cullingResults, bool opaque, int currentDepth)
 	{
 		var sampleName = $"draw geometry {(opaque ? "opaque" : "transparent")}";
+		Profiler.BeginSample(sampleName);
 		rc.cmd.BeginSample(sampleName);
 
 		var rendererListDesc = new RendererListDesc(new ShaderTagId("CustomLit"), cullingResults, rc.cam)
@@ -422,21 +438,24 @@ public class CustomRenderPipeline : RenderPipeline
 				stencilState = new StencilState(compareFunction: CompareFunction.Equal),
 				stencilReference = currentDepth
 			};
-			Execute(rc);
+			rc.ctx.ExecuteCommandBuffer(rc.cmd);
+			rc.cmd.Clear();
 			rc.ctx.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings, ref stateBlock);
 		}
 
 		rc.cmd.EndSample(sampleName);
+		Profiler.EndSample();
 	}
 
 	private void DrawShadows(RenderContext rc, CullingResults cullingResults)
 	{
+		var sampleName = $"draw shadows";
+		Profiler.BeginSample(sampleName);
+		rc.cmd.BeginSample(sampleName);
+
 		const int lightIndex = 0;
 
 		if (!cullingResults.GetShadowCasterBounds(lightIndex, out _)) return;
-
-		var sampleName = $"draw shadows";
-		rc.cmd.BeginSample(sampleName);
 
 		var shadowRt = Shader.PropertyToID("_ShadowBuffer");
 
@@ -482,7 +501,8 @@ public class CustomRenderPipeline : RenderPipeline
 		// rc.cmd.DrawRendererList(rc.ctx.CreateShadowRendererList(ref shadowSettings));
 		if (true)
 		{
-			Execute(rc);
+			rc.ctx.ExecuteCommandBuffer(rc.cmd);
+			rc.cmd.Clear();
 			rc.ctx.DrawShadows(ref shadowSettings);
 		}
 		rc.cmd.SetGlobalDepthBias(0, 0);
@@ -490,15 +510,6 @@ public class CustomRenderPipeline : RenderPipeline
 		rc.cmd.SetViewProjectionMatrices(rc.cam.worldToCameraMatrix, rc.cam.projectionMatrix);
 
 		rc.cmd.EndSample(sampleName);
-	}
-
-	/// <summary>
-	/// tell ctx to execute cmd. use before scheduling stuff with ctx
-	/// </summary>
-	/// <param name="rc"></param>
-	private void Execute(RenderContext rc)
-	{
-		rc.ctx.ExecuteCommandBuffer(rc.cmd);
-		rc.cmd.Clear();
+		Profiler.EndSample();
 	}
 }
