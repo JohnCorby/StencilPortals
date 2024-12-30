@@ -46,7 +46,7 @@ public class CustomRenderPipeline : RenderPipeline
 		camera.farClipPlane = RenderSettings.fogEndDistance * _asset.EdgeFadeMultiplier;
 
 		// apparently we only need to do this once and not per portal
-		context.SetupCameraProperties(camera);
+		// context.SetupCameraProperties(camera);
 
 		var cmd = CommandBufferPool.Get();
 		cmd.BeginSample(sampleName);
@@ -133,10 +133,8 @@ public class CustomRenderPipeline : RenderPipeline
 		context.ExecuteCommandBuffer(cmd);
 		CommandBufferPool.Release(cmd);
 
-		Profiler.BeginSample("real submit that is real and good");
-
+		Profiler.BeginSample("final submit");
 		context.Submit();
-
 		Profiler.EndSample();
 
 		// orientation gizmo breaks unless we do this
@@ -156,11 +154,14 @@ public class CustomRenderPipeline : RenderPipeline
 
 		DrawShadows(rc, cullingResults);
 
-		// Profiler.BeginSample("TEMP setup gabagool");
-		// rc.ctx.ExecuteCommandBuffer(rc.cmd);
-		// rc.cmd.Clear();
-		// rc.ctx.SetupCameraProperties(rc.cam);
-		// Profiler.EndSample();
+		// terrible
+		Profiler.BeginSample("setup camera and cull shadows NOW with submit");
+		rc.ctx.ExecuteCommandBuffer(rc.cmd);
+		rc.cmd.Clear();
+		rc.ctx.SetupCameraProperties(rc.cam);
+		rc.ctx.Submit();
+		Profiler.EndSample();
+		// setup camera changes target so we have to change it back (also shadows change the target so have to do that anyway)
 
 		// set target back to main render guy. this really needs to be cleaned up
 		var rt0 = Shader.PropertyToID("_ColorBuffer");
@@ -343,7 +344,7 @@ public class CustomRenderPipeline : RenderPipeline
 			Matrix4x4 m2 = Matrix4x4.TRS(new Vector3((1 / r.width - 1), (1 / r.height - 1), 0), Quaternion.identity, new Vector3(1 / r.width, 1 / r.height, 1));
 			Matrix4x4 m3 = Matrix4x4.TRS(new Vector3(-r.x * 2 / r.width, -r.y * 2 / r.height, 0), Quaternion.identity, Vector3.one);
 			rc.cam.projectionMatrix = m3 * m2 * m;
-			rc.cmd.SetProjectionMatrix(rc.cam.projectionMatrix);
+			// rc.cmd.SetProjectionMatrix(rc.cam.projectionMatrix);
 		}
 
 		// move camera to position to toPortal
@@ -353,7 +354,7 @@ public class CustomRenderPipeline : RenderPipeline
 			var localToWorld = p2pMatrix * rc.cam.transform.localToWorldMatrix;
 			// actually move camera so culling happens. could edit cullingMatrix instead but whatever
 			rc.cam.transform.SetPositionAndRotation(localToWorld.GetPosition(), localToWorld.rotation);
-			rc.cmd.SetViewMatrix(rc.cam.worldToCameraMatrix);
+			// rc.cmd.SetViewMatrix(rc.cam.worldToCameraMatrix);
 		}
 
 		// set near plane to toPortal
@@ -373,7 +374,7 @@ public class CustomRenderPipeline : RenderPipeline
 				// Update projection based on new clip plane
 				// Calculate matrix with player cam so that player camera settings (fov, etc) are used
 				rc.cam.projectionMatrix = rc.cam.CalculateObliqueMatrix(clipPlaneCameraSpace);
-				rc.cmd.SetProjectionMatrix(rc.cam.projectionMatrix);
+				// rc.cmd.SetProjectionMatrix(rc.cam.projectionMatrix);
 			}
 		}
 
@@ -391,9 +392,9 @@ public class CustomRenderPipeline : RenderPipeline
 		rc.cmd.BeginSample(sampleName);
 
 		rc.cam.transform.SetPositionAndRotation(localToWorld.GetPosition(), localToWorld.rotation);
-		rc.cmd.SetViewMatrix(rc.cam.worldToCameraMatrix);
+		// rc.cmd.SetViewMatrix(rc.cam.worldToCameraMatrix);
 		rc.cam.projectionMatrix = proj;
-		rc.cmd.SetProjectionMatrix(rc.cam.projectionMatrix);
+		// rc.cmd.SetProjectionMatrix(rc.cam.projectionMatrix);
 		rc.viewport = viewport;
 		rc.cmd.SetViewport(rc.viewport);
 
@@ -510,15 +511,9 @@ public class CustomRenderPipeline : RenderPipeline
 		}
 		*/
 
-		// for some god forsaken reason, shadow culling only happens on submit,
-		// so we have to do this before recursion so it has the correct camera position
-		rc.ctx.ExecuteCommandBuffer(rc.cmd);
-		rc.cmd.Clear();
-		rc.ctx.Submit();
-
 		rc.cmd.SetGlobalDepthBias(0, 0);
 
-		rc.cmd.SetViewProjectionMatrices(rc.cam.worldToCameraMatrix, rc.cam.projectionMatrix);
+		// rc.cmd.SetViewProjectionMatrices(rc.cam.worldToCameraMatrix, rc.cam.projectionMatrix);
 
 		rc.cmd.EndSample(sampleName);
 		Profiler.EndSample();
