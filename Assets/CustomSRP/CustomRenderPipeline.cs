@@ -442,13 +442,13 @@ public class CustomRenderPipeline : RenderPipeline
 
 	private void DrawShadows(RenderContext rc, CullingResults cullingResults)
 	{
-		var sampleName = $"draw shadows";
-		Profiler.BeginSample(sampleName);
-		rc.cmd.BeginSample(sampleName);
-
 		const int lightIndex = 0;
 
 		if (!cullingResults.GetShadowCasterBounds(lightIndex, out _)) return;
+
+		var sampleName = $"draw shadows";
+		Profiler.BeginSample(sampleName);
+		rc.cmd.BeginSample(sampleName);
 
 		var shadowRt = Shader.PropertyToID("_ShadowBuffer");
 
