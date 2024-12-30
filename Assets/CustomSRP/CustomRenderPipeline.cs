@@ -132,7 +132,11 @@ public class CustomRenderPipeline : RenderPipeline
 		context.ExecuteCommandBuffer(cmd);
 		CommandBufferPool.Release(cmd);
 
+		Profiler.BeginSample("TEMP submit");
+
 		context.Submit();
+
+		Profiler.EndSample();
 
 		// orientation gizmo breaks unless we do this
 		camera.ResetProjectionMatrix();
@@ -150,6 +154,12 @@ public class CustomRenderPipeline : RenderPipeline
 		var cullingResults = rc.ctx.Cull(ref cullingParameters);
 
 		DrawShadows(rc, cullingResults);
+
+		// Profiler.BeginSample("TEMP setup gabagool");
+		// rc.ctx.ExecuteCommandBuffer(rc.cmd);
+		// rc.cmd.Clear();
+		// rc.ctx.SetupCameraProperties(rc.cam);
+		// Profiler.EndSample();
 
 		// set target back to main render guy. this really needs to be cleaned up
 		var rt0 = Shader.PropertyToID("_ColorBuffer");
@@ -443,6 +453,7 @@ public class CustomRenderPipeline : RenderPipeline
 		var shadowRt = Shader.PropertyToID("_ShadowBuffer");
 
 		var atlasSize = _asset.ShadowAtlasSize;
+		// TODO only create shadow texture once please
 		rc.cmd.GetTemporaryRT(shadowRt, atlasSize, atlasSize, 32, FilterMode.Bilinear, RenderTextureFormat.Shadowmap);
 		rc.cmd.SetRenderTarget(shadowRt);
 		rc.cmd.ClearRenderTarget(RTClearFlags.All, Color.clear);
