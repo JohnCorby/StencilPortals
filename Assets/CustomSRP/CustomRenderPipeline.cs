@@ -56,7 +56,7 @@ public class CustomRenderPipeline : RenderPipeline
 			cmd.SetGlobalVector("_AmbientLightColor", RenderSettings.ambientLight);
 
 			var light = RenderSettings.sun;
-			cmd.SetGlobalVector("_DirectionalLightColor", light.color * light.intensity);
+			cmd.SetGlobalVector("_DirectionalLightCSolor", light.color * light.intensity);
 			cmd.SetGlobalVector("_DirectionalLightDirection", -light.transform.forward);
 		}
 
@@ -162,7 +162,7 @@ public class CustomRenderPipeline : RenderPipeline
 		cullingParameters.shadowDistance = Mathf.Min(_asset.MaxShadowDistance, RenderSettings.fogEndDistance);
 		var cullingResults = rc.ctx.Cull(ref cullingParameters);
 
-		DrawShadows(rc, cullingResults);
+		// DrawShadows(rc, cullingResults);
 
 		var rt0 = Shader.PropertyToID("_ColorBuffer");
 		var rt1 = Shader.PropertyToID("_NormalBuffer");
@@ -408,7 +408,23 @@ public class CustomRenderPipeline : RenderPipeline
 				stencilReference = currentDepth
 			}
 		};
-		rc.cmd.DrawRendererList(rc.ctx.CreateRendererList(rendererListDesc));
+		// rc.cmd.DrawRendererList(rc.ctx.CreateRendererList(rendererListDesc));
+		if (true)
+		{
+			var sortingSettings = new SortingSettings(rc.cam)
+			{
+				criteria = opaque ? SortingCriteria.CommonOpaque : SortingCriteria.CommonTransparent
+			};
+			var drawingSettings = new DrawingSettings(new ShaderTagId("CustomLit"), sortingSettings);
+			var filteringSettings = new FilteringSettings(opaque ? RenderQueueRange.opaque : RenderQueueRange.transparent);
+			var stateBlock = new RenderStateBlock(RenderStateMask.Stencil)
+			{
+				stencilState = new StencilState(compareFunction: CompareFunction.Equal),
+				stencilReference = currentDepth
+			};
+			Execute(rc);
+			rc.ctx.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings, ref stateBlock);
+		}
 
 		rc.cmd.EndSample(sampleName);
 	}
@@ -463,11 +479,26 @@ public class CustomRenderPipeline : RenderPipeline
 		rc.cmd.SetViewProjectionMatrices(view, proj);
 
 		rc.cmd.SetGlobalDepthBias(0, light.shadowBias); // doesnt seem to do anything :(
-		rc.cmd.DrawRendererList(rc.ctx.CreateShadowRendererList(ref shadowSettings));
+		// rc.cmd.DrawRendererList(rc.ctx.CreateShadowRendererList(ref shadowSettings));
+		if (true)
+		{
+			Execute(rc);
+			rc.ctx.DrawShadows(ref shadowSettings);
+		}
 		rc.cmd.SetGlobalDepthBias(0, 0);
 
 		rc.cmd.SetViewProjectionMatrices(rc.cam.worldToCameraMatrix, rc.cam.projectionMatrix);
 
 		rc.cmd.EndSample(sampleName);
+	}
+
+	/// <summary>
+	/// tell ctx to execute cmd. use before scheduling stuff with ctx
+	/// </summary>
+	/// <param name="rc"></param>
+	private void Execute(RenderContext rc)
+	{
+		rc.ctx.ExecuteCommandBuffer(rc.cmd);
+		rc.cmd.Clear();
 	}
 }
