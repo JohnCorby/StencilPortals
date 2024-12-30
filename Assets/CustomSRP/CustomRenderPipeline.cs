@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.Collections;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
@@ -462,19 +461,12 @@ public class CustomRenderPipeline : RenderPipeline
 		rc.cmd.ClearRenderTarget(RTClearFlags.All, Color.clear);
 
 		var light = RenderSettings.sun;
-		var shadowSettings = new ShadowDrawingSettings(cullingResults, lightIndex);
+		var shadowSettings = new ShadowDrawingSettings(cullingResults, lightIndex, BatchCullingProjectionType.Orthographic);
 		cullingResults.ComputeDirectionalShadowMatricesAndCullingPrimitives(
 			lightIndex, 0, 1, Vector3.zero, atlasSize, light.shadowNearPlane,
 			out var view, out var proj, out var splitData
 		);
-
-		// NativeArray<
-
-		// rc.ctx.CullShadowCasters(cullingResults, new ShadowCastersCullingInfos
-		// {
-		// splitBuffer = default,
-		// perLightInfos = default
-		// });
+		shadowSettings.splitData = splitData;
 
 		{
 			var m = proj * view;
