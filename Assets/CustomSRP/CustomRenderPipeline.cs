@@ -132,9 +132,7 @@ public class CustomRenderPipeline : RenderPipeline
 		context.ExecuteCommandBuffer(cmd);
 		CommandBufferPool.Release(cmd);
 
-		Profiler.BeginSample("final submit");
 		context.Submit();
-		Profiler.EndSample();
 
 		// orientation gizmo breaks unless we do this
 		camera.ResetProjectionMatrix();
@@ -442,11 +440,6 @@ public class CustomRenderPipeline : RenderPipeline
 		);
 		shadowSettings.splitData = splitData;
 
-		// cause shadow culling now by submitting
-		rc.ctx.ExecuteCommandBuffer(rc.cmd);
-		rc.cmd.Clear();
-		rc.ctx.Submit();
-
 		{
 			var m = proj * view;
 			if (SystemInfo.usesReversedZBuffer)
@@ -477,6 +470,11 @@ public class CustomRenderPipeline : RenderPipeline
 		rc.cmd.SetGlobalDepthBias(0, 0);
 
 		rc.cmd.SetViewProjectionMatrices(rc.cam.worldToCameraMatrix, rc.cam.projectionMatrix);
+
+		// cause shadow culling now by submitting
+		rc.ctx.ExecuteCommandBuffer(rc.cmd);
+		rc.cmd.Clear();
+		rc.ctx.Submit();
 
 		rc.cmd.EndSample(sampleName);
 		Profiler.EndSample();
