@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
@@ -132,7 +133,7 @@ public class CustomRenderPipeline : RenderPipeline
 		context.ExecuteCommandBuffer(cmd);
 		CommandBufferPool.Release(cmd);
 
-		Profiler.BeginSample("TEMP submit");
+		Profiler.BeginSample("real submit that is real and good");
 
 		context.Submit();
 
@@ -417,8 +418,8 @@ public class CustomRenderPipeline : RenderPipeline
 				stencilReference = currentDepth
 			}
 		};
-		// rc.cmd.DrawRendererList(rc.ctx.CreateRendererList(rendererListDesc));
-		if (true)
+		rc.cmd.DrawRendererList(rc.ctx.CreateRendererList(rendererListDesc));
+		/*
 		{
 			var sortingSettings = new SortingSettings(rc.cam)
 			{
@@ -435,6 +436,7 @@ public class CustomRenderPipeline : RenderPipeline
 			rc.cmd.Clear();
 			rc.ctx.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings, ref stateBlock);
 		}
+		*/
 
 		rc.cmd.EndSample(sampleName);
 		Profiler.EndSample();
@@ -459,12 +461,19 @@ public class CustomRenderPipeline : RenderPipeline
 		rc.cmd.ClearRenderTarget(RTClearFlags.All, Color.clear);
 
 		var light = RenderSettings.sun;
-		var shadowSettings = new ShadowDrawingSettings(cullingResults, lightIndex, BatchCullingProjectionType.Orthographic);
+		var shadowSettings = new ShadowDrawingSettings(cullingResults, lightIndex);
 		cullingResults.ComputeDirectionalShadowMatricesAndCullingPrimitives(
 			lightIndex, 0, 1, Vector3.zero, atlasSize, light.shadowNearPlane,
 			out var view, out var proj, out var splitData
 		);
-		shadowSettings.splitData = splitData;
+
+		// NativeArray<
+
+		// rc.ctx.CullShadowCasters(cullingResults, new ShadowCastersCullingInfos
+		// {
+		// splitBuffer = default,
+		// perLightInfos = default
+		// });
 
 		{
 			var m = proj * view;
@@ -492,13 +501,21 @@ public class CustomRenderPipeline : RenderPipeline
 		rc.cmd.SetViewProjectionMatrices(view, proj);
 
 		rc.cmd.SetGlobalDepthBias(0, light.shadowBias); // doesnt seem to do anything :(
-		// rc.cmd.DrawRendererList(rc.ctx.CreateShadowRendererList(ref shadowSettings));
-		if (true)
+		rc.cmd.DrawRendererList(rc.ctx.CreateShadowRendererList(ref shadowSettings));
+		/*
 		{
 			rc.ctx.ExecuteCommandBuffer(rc.cmd);
 			rc.cmd.Clear();
 			rc.ctx.DrawShadows(ref shadowSettings);
 		}
+		*/
+
+		// for some god forsaken reason, shadow culling only happens on submit,
+		// so we have to do this before recursion so it has the correct camera position
+		rc.ctx.ExecuteCommandBuffer(rc.cmd);
+		rc.cmd.Clear();
+		rc.ctx.Submit();
+
 		rc.cmd.SetGlobalDepthBias(0, 0);
 
 		rc.cmd.SetViewProjectionMatrices(rc.cam.worldToCameraMatrix, rc.cam.projectionMatrix);
