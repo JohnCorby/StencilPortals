@@ -44,8 +44,8 @@ public class CustomRenderPipeline : RenderPipeline
 		// hacky, but no need to render past fog
 		camera.farClipPlane = RenderSettings.fogEndDistance * _asset.EdgeFadeMultiplier;
 
-		// apparently we only need to do this once and not per portal
-		// context.SetupCameraProperties(camera);
+		// only do this once. inner portals have matrices changed manually
+		context.SetupCameraProperties(camera);
 
 		var cmd = CommandBufferPool.Get();
 		cmd.BeginSample(sampleName);
@@ -59,7 +59,7 @@ public class CustomRenderPipeline : RenderPipeline
 			cmd.SetGlobalVector("_AmbientLightColor", RenderSettings.ambientLight);
 
 			var light = RenderSettings.sun;
-			cmd.SetGlobalVector("_DirectionalLightCSolor", light.color * light.intensity);
+			cmd.SetGlobalVector("_DirectionalLightColor", light.color * light.intensity);
 			cmd.SetGlobalVector("_DirectionalLightDirection", -light.transform.forward);
 		}
 
@@ -152,15 +152,6 @@ public class CustomRenderPipeline : RenderPipeline
 		var cullingResults = rc.ctx.Cull(ref cullingParameters);
 
 		DrawShadows(rc, cullingResults);
-
-		// terrible
-		Profiler.BeginSample("setup camera and cull shadows NOW with submit");
-		rc.ctx.ExecuteCommandBuffer(rc.cmd);
-		rc.cmd.Clear();
-		rc.ctx.SetupCameraProperties(rc.cam);
-		rc.ctx.Submit();
-		Profiler.EndSample();
-		// setup camera changes target so we have to change it back (also shadows change the target so have to do that anyway)
 
 		// set target back to main render guy. this really needs to be cleaned up
 		var rt0 = Shader.PropertyToID("_ColorBuffer");
@@ -343,7 +334,7 @@ public class CustomRenderPipeline : RenderPipeline
 			Matrix4x4 m2 = Matrix4x4.TRS(new Vector3((1 / r.width - 1), (1 / r.height - 1), 0), Quaternion.identity, new Vector3(1 / r.width, 1 / r.height, 1));
 			Matrix4x4 m3 = Matrix4x4.TRS(new Vector3(-r.x * 2 / r.width, -r.y * 2 / r.height, 0), Quaternion.identity, Vector3.one);
 			rc.cam.projectionMatrix = m3 * m2 * m;
-			// rc.cmd.SetProjectionMatrix(rc.cam.projectionMatrix);
+			rc.cmd.SetProjectionMatrix(rc.cam.projectionMatrix);
 		}
 
 		// move camera to position to toPortal
@@ -353,7 +344,7 @@ public class CustomRenderPipeline : RenderPipeline
 			var localToWorld = p2pMatrix * rc.cam.transform.localToWorldMatrix;
 			// actually move camera so culling happens. could edit cullingMatrix instead but whatever
 			rc.cam.transform.SetPositionAndRotation(localToWorld.GetPosition(), localToWorld.rotation);
-			// rc.cmd.SetViewMatrix(rc.cam.worldToCameraMatrix);
+			rc.cmd.SetViewMatrix(rc.cam.worldToCameraMatrix);
 		}
 
 		// set near plane to toPortal
@@ -373,7 +364,7 @@ public class CustomRenderPipeline : RenderPipeline
 				// Update projection based on new clip plane
 				// Calculate matrix with player cam so that player camera settings (fov, etc) are used
 				rc.cam.projectionMatrix = rc.cam.CalculateObliqueMatrix(clipPlaneCameraSpace);
-				// rc.cmd.SetProjectionMatrix(rc.cam.projectionMatrix);
+				rc.cmd.SetProjectionMatrix(rc.cam.projectionMatrix);
 			}
 		}
 
@@ -391,9 +382,9 @@ public class CustomRenderPipeline : RenderPipeline
 		rc.cmd.BeginSample(sampleName);
 
 		rc.cam.transform.SetPositionAndRotation(localToWorld.GetPosition(), localToWorld.rotation);
-		// rc.cmd.SetViewMatrix(rc.cam.worldToCameraMatrix);
+		rc.cmd.SetViewMatrix(rc.cam.worldToCameraMatrix);
 		rc.cam.projectionMatrix = proj;
-		// rc.cmd.SetProjectionMatrix(rc.cam.projectionMatrix);
+		rc.cmd.SetProjectionMatrix(rc.cam.projectionMatrix);
 		rc.viewport = viewport;
 		rc.cmd.SetViewport(rc.viewport);
 
@@ -419,24 +410,6 @@ public class CustomRenderPipeline : RenderPipeline
 			}
 		};
 		rc.cmd.DrawRendererList(rc.ctx.CreateRendererList(rendererListDesc));
-		/*
-		{
-			var sortingSettings = new SortingSettings(rc.cam)
-			{
-				criteria = opaque ? SortingCriteria.CommonOpaque : SortingCriteria.CommonTransparent
-			};
-			var drawingSettings = new DrawingSettings(new ShaderTagId("CustomLit"), sortingSettings);
-			var filteringSettings = new FilteringSettings(opaque ? RenderQueueRange.opaque : RenderQueueRange.transparent);
-			var stateBlock = new RenderStateBlock(RenderStateMask.Stencil)
-			{
-				stencilState = new StencilState(compareFunction: CompareFunction.Equal),
-				stencilReference = currentDepth
-			};
-			rc.ctx.ExecuteCommandBuffer(rc.cmd);
-			rc.cmd.Clear();
-			rc.ctx.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings, ref stateBlock);
-		}
-		*/
 
 		rc.cmd.EndSample(sampleName);
 		Profiler.EndSample();
@@ -461,12 +434,18 @@ public class CustomRenderPipeline : RenderPipeline
 		rc.cmd.ClearRenderTarget(RTClearFlags.All, Color.clear);
 
 		var light = RenderSettings.sun;
+		// this still uses old deprecated thing. i dont care, i dont even know if its needed
 		var shadowSettings = new ShadowDrawingSettings(cullingResults, lightIndex, BatchCullingProjectionType.Orthographic);
 		cullingResults.ComputeDirectionalShadowMatricesAndCullingPrimitives(
 			lightIndex, 0, 1, Vector3.zero, atlasSize, light.shadowNearPlane,
 			out var view, out var proj, out var splitData
 		);
 		shadowSettings.splitData = splitData;
+
+		// cause shadow culling now by submitting
+		rc.ctx.ExecuteCommandBuffer(rc.cmd);
+		rc.cmd.Clear();
+		rc.ctx.Submit();
 
 		{
 			var m = proj * view;
@@ -495,17 +474,9 @@ public class CustomRenderPipeline : RenderPipeline
 
 		rc.cmd.SetGlobalDepthBias(0, light.shadowBias); // doesnt seem to do anything :(
 		rc.cmd.DrawRendererList(rc.ctx.CreateShadowRendererList(ref shadowSettings));
-		/*
-		{
-			rc.ctx.ExecuteCommandBuffer(rc.cmd);
-			rc.cmd.Clear();
-			rc.ctx.DrawShadows(ref shadowSettings);
-		}
-		*/
-
 		rc.cmd.SetGlobalDepthBias(0, 0);
 
-		// rc.cmd.SetViewProjectionMatrices(rc.cam.worldToCameraMatrix, rc.cam.projectionMatrix);
+		rc.cmd.SetViewProjectionMatrices(rc.cam.worldToCameraMatrix, rc.cam.projectionMatrix);
 
 		rc.cmd.EndSample(sampleName);
 		Profiler.EndSample();
