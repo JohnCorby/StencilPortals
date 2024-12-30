@@ -63,21 +63,6 @@ public class CustomRenderPipeline : RenderPipeline
 			cmd.SetGlobalVector("_DirectionalLightDirection", -light.transform.forward);
 		}
 
-		// temp
-		/*
-		{
-			camera.TryGetCullingParameters(out var cullingParameters);
-			cullingParameters.shadowDistance = Mathf.Min(_asset.MaxShadowDistance, RenderSettings.fogEndDistance);
-			var cullingResults = context.Cull(ref cullingParameters);
-			DrawShadows(new RenderContext
-			{
-				cmd = cmd,
-				ctx = context,
-				cam = camera,
-			}, cullingResults);
-		}
-		*/
-
 		var rt0 = Shader.PropertyToID("_ColorBuffer");
 		var rt1 = Shader.PropertyToID("_NormalBuffer");
 		var rt2 = Shader.PropertyToID("_DistanceBuffer");
@@ -114,9 +99,6 @@ public class CustomRenderPipeline : RenderPipeline
 			viewport = new Rect(0, 0, camera.pixelWidth, camera.pixelHeight),
 		};
 		RenderPortal(rc, null, 0);
-
-		// temp
-		// cmd.ReleaseTemporaryRT(Shader.PropertyToID("_ShadowBuffer"));
 
 #if UNITY_EDITOR
 		// cant render this per portal, it doesnt move for some reason
@@ -167,8 +149,9 @@ public class CustomRenderPipeline : RenderPipeline
 		cullingParameters.shadowDistance = Mathf.Min(_asset.MaxShadowDistance, RenderSettings.fogEndDistance);
 		var cullingResults = rc.ctx.Cull(ref cullingParameters);
 
-		// DrawShadows(rc, cullingResults);
+		DrawShadows(rc, cullingResults);
 
+		// set target back to main render guy. this really needs to be cleaned up
 		var rt0 = Shader.PropertyToID("_ColorBuffer");
 		var rt1 = Shader.PropertyToID("_NormalBuffer");
 		var rt2 = Shader.PropertyToID("_DistanceBuffer");
